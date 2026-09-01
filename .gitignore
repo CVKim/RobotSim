@@ -1,0 +1,17 @@
+# 가상환경·캐시
+.venv/
+.conda/
+__pycache__/
+*.pyc
+
+# 학습 산출물·로그
+runs/
+wandb/
+
+# 회사 데이터 파생물 — 공개 저장소에 올리지 않음 (docs/03 참조)
+explore/
+docs/research/
+docs/10_데이터_탐색_리포트.md
+tools/local_paths.py
+*.mim
+*.bmp

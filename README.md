@@ -60,10 +60,16 @@
 
 1100×1100mm(T-11) heightmap 환경, 지지율 제약 + action mask 내장 (`tools/palletize_env.py`):
 
-- **DBL 휴리스틱 베이스라인: 부피 활용률 52.8% ± 1.4%** (100 에피소드) — RL 개선 목표선
-- MaskablePPO 학습 스크립트: `tools/palletize_train.py`
+- DBL 휴리스틱 베이스라인: **56.6±4.1박스, 활용률 59.8%** (max 120박스, 100 에피소드)
+- **MaskablePPO (1.5M 스텝): 64.9박스, 활용률 68.5%±0.6%** — 동일 시드 100 에피소드 공정 평가에서 **휴리스틱 대비 +14.7% 박스, +8.7%p 활용률, 분산 대폭 감소**
 
-![palletize](assets/ep_high_seed068.png)
+![learning curve](assets/learning_curve_final.png)
+
+같은 시드(68)에서의 최종 적재 비교 — PPO 65박스 vs DBL 56박스:
+
+| MaskablePPO | DBL 휴리스틱 |
+|---|---|
+| ![ppo](assets/ep_ppo_seed068.png) | ![dbl](assets/ep_dbl120_seed068.png) |
 
 ## 빠른 시작
 

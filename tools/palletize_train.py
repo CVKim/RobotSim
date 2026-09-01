@@ -28,7 +28,7 @@ class PalletizeGym(gym.Env):
 
     def __init__(self, seed=None):
         super().__init__()
-        self.env = PalletizeEnv()
+        self.env = PalletizeEnv(max_boxes=120)
         self._next_seed = seed
         self.action_space = spaces.Discrete(GRID * GRID * 2)
         self.observation_space = spaces.Box(

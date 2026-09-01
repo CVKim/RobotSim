@@ -30,6 +30,41 @@
 7. **T7** ToF 노이즈 캘리브레이션 DR (회사 카메라 접근 시)
 8. **T8** (옵션) Isaac Lab 10GB 실측 글 / MJWarp 벤치마크
 
+## 결과 하이라이트 (실측 데이터 기반, 집계 수치만 공개)
+
+> 산업 현장 고정 카메라의 RGB + ToF(X/Y/D/I, 640×480, mm) 데이터를 분석. 원본은 비공개(회사 데이터).
+
+### 1. ToF만으로 디팔레타이징 로그 복원
+
+깊이 히스토그램 층 검출 + **ToF 강도(I) 채널 에지로 박스 이음새 분리** → 30세션에서 박스 148개 검출.
+
+- 상면 치수 **L = 293.0±9.2mm, W = 218.8±9.9mm** (변동계수 3%), 층간 깊이차로 박스 높이 283mm 도출
+- 평면 피팅 픽포인트: 기울기 평균 0.95°(최대 2.7°), 평면 RMS 5.4mm
+- 슬롯 추적으로 픽킹 순서 자동 복원 (1층 12→3개, 2층 10→3개, 세션당 1픽)
+
+![depal timeline](assets/depal_timeline.png)
+![dims histogram](assets/dims_hist.png)
+
+### 2. ToF 노이즈 모델: 거리가 아니라 강도가 지배한다
+
+30세션에서 정적 픽셀 12.7만 개를 자동 선별해 시간적 노이즈 실측:
+
+- σ vs 거리: **비단조** — 거리 기반 노이즈 모델(BlenderProc 기본 Kinect 모델 등)은 이 센서에 부적합
+- σ vs 강도: 로그-로그 직선 → **σ(mm) = 180.3 × I^(-0.805)** (샷노이즈 물리와 정합)
+- 활용: 합성 데이터(sim2real)의 depth 노이즈 주입을 실측 σ(I)로 캘리브레이션
+
+![noise vs intensity](assets/noise_vs_intensity.png)
+![noise vs distance](assets/noise_vs_distance.png)
+
+### 3. 실측 치수로 시드한 팔레타이징 RL 환경
+
+1100×1100mm(T-11) heightmap 환경, 지지율 제약 + action mask 내장 (`tools/palletize_env.py`):
+
+- **DBL 휴리스틱 베이스라인: 부피 활용률 52.8% ± 1.4%** (100 에피소드) — RL 개선 목표선
+- MaskablePPO 학습 스크립트: `tools/palletize_train.py`
+
+![palletize](assets/ep_high_seed068.png)
+
 ## 빠른 시작
 
 ```powershell

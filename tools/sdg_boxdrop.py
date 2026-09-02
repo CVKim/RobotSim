@@ -30,6 +30,15 @@ K = np.array([[517.0, 0, 320.0], [0, 517.0, 240.0], [0, 0, 1.0]])
 bproc.camera.set_intrinsics_from_K_matrix(K, 640, 480)
 
 # 박스 12개 영구 생성 (씬마다 재배치 — 삭제/재생성 시 세그맵이 깨지는 문제 회피)
+# 방해물 풀 (팔레트 밖 배경 클러터 — 실측 장면의 설비 재현)
+distractors = []
+for k in range(8):
+    d = bproc.object.create_primitive("CUBE")
+    dm = bproc.material.create(f"dist_{k}")
+    d.replace_materials(dm)
+    d.set_cp("category_id", 0)
+    distractors.append((d, dm))
+
 pool = []
 for k in range(12):
     b = bproc.object.create_primitive("CUBE")  # 기본 2m 큐브 - 스케일은 씬마다 set_scale로만
@@ -47,9 +56,23 @@ for scene_i in range(args.n_scenes):
     light.set_location([rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(2, 3.2)])
     light.set_energy(rng.uniform(60, 260))
 
-    for b, _ in pool:  # 이전 씬 물리 베이크 키프레임 제거 (안 하면 새 위치가 무시됨)
+    for b, _ in pool + distractors:  # 이전 씬 물리 베이크 키프레임 제거
         if b.blender_obj.animation_data:
             b.blender_obj.animation_data_clear()
+
+    # 바닥 깊이 랜덤화 (실측 바닥 4.18m 재현: 카메라 기준 3.3~4.3m)
+    ground.set_location([0, 0, -rng.uniform(0.0, 1.0)])
+
+    # 방해물: 팔레트 밖 링 영역에 다양한 크기·높이로 배치 (정적)
+    for d, dm in distractors:
+        g = rng.uniform(0.15, 0.5)
+        dm.set_principled_shader_value("Base Color", [g, g, g * rng.uniform(0.8, 1.2), 1])
+        sx, sy, sz = rng.uniform(0.05, 0.5, 3)
+        d.set_scale([sx, sy, sz])
+        ang = rng.uniform(0, 2 * np.pi)
+        r = rng.uniform(0.85, 1.6)
+        d.set_location([r * np.cos(ang), r * np.sin(ang), sz + ground.get_location()[2]])
+        d.set_rotation_euler([0, 0, rng.uniform(0, np.pi)])
 
     n_layer = rng.integers(6, 13)
     grid = [(gx, gy) for gx in range(4) for gy in range(3)]

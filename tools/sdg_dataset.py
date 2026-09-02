@@ -22,7 +22,7 @@ except ImportError:
     import os
     BINPICK_DIR = os.environ["BINPICK_DIR"]
 
-D_LO, D_HI = 2600.0, 3500.0
+D_LO, D_HI = 2600.0, 4300.0
 ROOT = Path(r"E:\Robot_Sim\explore")
 
 
@@ -34,14 +34,20 @@ def depth_to_img(D_mm, valid):
     return cv2.merge([g, g, g])
 
 
-def add_tof_noise(D_mm, valid, rng, sigma=3.0, edge_drop=0.55, speckle=0.04):
-    """실측 특성 기반 노이즈: 가우시안 σ(상면 실측 ~2-4mm) + 에지 인접 드롭아웃(점선 이음새)
-    + 랜덤 스펙클. 반환: (noisy_depth, new_valid)"""
+def add_tof_noise(D_mm, valid, rng, sigma=3.0, edge_drop=0.55, speckle=0.04, n_blobs=(6, 18)):
+    """실측 특성 기반 노이즈: 가우시안 σ + 에지 드롭아웃 + 스펙클 + 대면적 블롭 무효
+    (실측 프레임의 저반사/기구부 대면적 결손 재현 — 유효율 ~60% 수준). """
+    h, w = D_mm.shape
     D = D_mm + rng.normal(0, sigma, D_mm.shape)
     g = cv2.morphologyEx(D_mm.astype(np.float32), cv2.MORPH_GRADIENT, np.ones((3, 3), np.uint8))
-    edge = g > 30  # 깊이 불연속 인접
-    drop = (rng.random(D.shape) < edge_drop) & edge
+    drop = (rng.random(D.shape) < edge_drop) & (g > 30)
     drop |= rng.random(D.shape) < speckle
+    blob = np.zeros((h, w), np.uint8)
+    for _ in range(rng.integers(*n_blobs)):
+        cv2.ellipse(blob, (rng.integers(0, w), rng.integers(0, h)),
+                    (int(rng.integers(8, 80)), int(rng.integers(8, 80))),
+                    float(rng.uniform(0, 180)), 0, 360, 1, -1)
+    drop |= blob > 0
     return D, valid & ~drop
 
 

@@ -30,6 +30,11 @@
 7. **T7** ToF 노이즈 캘리브레이션 DR (회사 카메라 접근 시)
 8. **T8** (옵션) Isaac Lab 10GB 실측 글 / MJWarp 벤치마크
 
+## 아키텍처
+
+전체 파이프라인 다이어그램(데이터→인식→RL→통합데모, Mermaid 렌더링): **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
+· 편집용 손그림 소스: [docs/diagrams/pipeline.excalidraw](docs/diagrams/pipeline.excalidraw)
+
 ## 결과 하이라이트 (실측 데이터 기반, 집계 수치만 공개)
 
 > 산업 현장 고정 카메라의 RGB + ToF(X/Y/D/I, 640×480, mm) 데이터를 분석. 원본은 비공개(회사 데이터).

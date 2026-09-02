@@ -32,7 +32,7 @@ bproc.camera.set_intrinsics_from_K_matrix(K, 640, 480)
 # 박스 12개 영구 생성 (씬마다 재배치 — 삭제/재생성 시 세그맵이 깨지는 문제 회피)
 pool = []
 for k in range(12):
-    b = bproc.object.create_primitive("CUBE", scale=list(BOX / 2))
+    b = bproc.object.create_primitive("CUBE")  # 기본 2m 큐브 - 스케일은 씬마다 set_scale로만
     mat = bproc.material.create(f"card_{k}")
     b.replace_materials(mat)
     b.enable_rigidbody(active=True, collision_shape="BOX")
@@ -46,6 +46,10 @@ bproc.renderer.enable_segmentation_output(map_by=["category_id", "instance"],
 for scene_i in range(args.n_scenes):
     light.set_location([rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(2, 3.2)])
     light.set_energy(rng.uniform(60, 260))
+
+    for b, _ in pool:  # 이전 씬 물리 베이크 키프레임 제거 (안 하면 새 위치가 무시됨)
+        if b.blender_obj.animation_data:
+            b.blender_obj.animation_data_clear()
 
     n_layer = rng.integers(6, 13)
     grid = [(gx, gy) for gx in range(4) for gy in range(3)]

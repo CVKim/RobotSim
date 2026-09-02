@@ -115,10 +115,12 @@ def suggest_and_render(session_name, model, floor_only=True):
     img = cv2.addWeighted(overlay, 0.35, img, 0.65, 0)
     cv2.polylines(img, [pix], True, (0, 215, 255), 2)
     cx, cy = pix.mean(axis=0).astype(int)
-    cv2.putText(img, "NEXT", (cx - 30, cy + 8), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 4)
-    cv2.putText(img, "NEXT", (cx - 30, cy + 8), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (60, 220, 255), 2)
-    cv2.putText(img, f"PPO next placement (floor slots only): grid=({gx},{gy}) rot={90*int(rot)}deg",
-                (10, 465), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+    cv2.putText(img, "PLACE", (cx - 34, cy + 8), cv2.FONT_HERSHEY_SIMPLEX, 0.72, (0, 0, 0), 4)
+    cv2.putText(img, "PLACE", (cx - 34, cy + 8), cv2.FONT_HERSHEY_SIMPLEX, 0.72, (60, 220, 255), 2)
+    cv2.putText(img, "GREEN = detected boxes (pick targets) | AMBER = where PPO would PLACE the next box",
+                (10, 448), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 255, 255), 1)
+    cv2.putText(img, f"palletizing policy suggestion: grid=({gx},{gy}) rot={90*int(rot)}deg (empty floor slots only)",
+                (10, 468), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 255), 1)
     cv2.imwrite(str(out_path), img)
     return session_name, (int(gx), int(gy), int(rot)), len(cur)
 

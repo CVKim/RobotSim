@@ -45,6 +45,16 @@
 ![depal timeline](assets/depal_timeline.png)
 ![dims histogram](assets/dims_hist.png)
 
+### 1.5 인식 → 정책 연동 데모
+
+검출(초록) 상태를 학습된 팔레타이징 PPO에 이식 → 다음 배치 위치(앰버 NEXT)를 빈 슬롯에 제안:
+
+| 상면 검출 + mm 치수 | 픽포인트(십자) + 기울기 | PPO 배치 제안 | 대차 후크 검출 |
+|---|---|---|---|
+| ![t](assets/demo_topface.png) | ![p](assets/demo_pickpoints.png) | ![n](assets/demo_next_v2.png) | ![h](assets/demo_hook.png) |
+
+*(depth 기반 시각화만 공개 — RGB 원본은 비공개 원칙 유지)*
+
 ### 2. ToF 노이즈 모델: 거리가 아니라 강도가 지배한다
 
 30세션에서 정적 픽셀 12.7만 개를 자동 선별해 시간적 노이즈 실측:

@@ -20,7 +20,7 @@ ENV_ID = "gym_hil/PandaPickCubeBase-v0"
 
 
 def make_env():
-    env = gym.make(ENV_ID, image_obs=False)
+    env = gym.make(ENV_ID, image_obs=False, reward_type="dense")
     return Monitor(env)
 
 
@@ -35,7 +35,7 @@ def evaluate(model, n=50):
             obs, r, term, trunc, info = env.step(act)
             ret += r
             done = term or trunc
-        succ += bool(info.get("succeed", info.get("is_success", term and r > 0)))
+        succ += bool(info.get("succeed", False))
         rets.append(ret)
     env.close()
     return succ / n, float(np.mean(rets))

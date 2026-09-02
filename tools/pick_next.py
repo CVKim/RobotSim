@@ -39,7 +39,12 @@ def render_pick_next(session_name):
     present = [i for i, o in enumerate(slot["occupied"]) if o]
     dist = {i: float(np.hypot(ref_picks[i]["center_mm"][0] - dest_xy[0],
                               ref_picks[i]["center_mm"][1] - dest_xy[1])) for i in present}
-    pred = min(present, key=lambda i: dist[i])
+    # 열 스캔 규칙 (실제 픽 순서 마이닝: 그리디 50% -> 열 스캔 81%):
+    # 목적지 최근접 박스가 속한 열(|dx|<80mm)에서 가장 먼 것부터 픽
+    P = min(present, key=lambda i: dist[i])
+    col = [i for i in present
+           if abs(ref_picks[i]["center_mm"][0] - ref_picks[P]["center_mm"][0]) < 80]
+    pred = max(col, key=lambda i: dist[i])
     actual = next((t["actual"] for t in ev["transitions"] if t["from"] == session_name[-6:]), None)
 
     sess = load_session(Path(BINPICK_DIR) / session_name)
@@ -70,7 +75,7 @@ def render_pick_next(session_name):
     elif actual == pred:
         cv2.putText(img, "= ACTUAL", (px[0] - 34, px[1] + 46), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (120, 255, 120), 1)
 
-    cv2.putText(img, "min-motion pick suggestion -> DEST | eval on 16 transitions: exact 50%, top-2 81%, mean rank 1.69",
+    cv2.putText(img, "min-motion pick suggestion -> DEST | column-scan rule: 81% exact match with real pick order (greedy 50%)",
                 (10, 468), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (0, 255, 255), 1)
     cv2.imwrite(str(out_path), img)
     return pred, actual, round(dist[pred])

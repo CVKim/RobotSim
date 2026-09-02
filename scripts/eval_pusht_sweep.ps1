@@ -14,6 +14,7 @@ Get-ChildItem $ckRoot -Directory | Sort-Object Name | ForEach-Object {
         --env.type=pusht `
         --eval.n_episodes=50 `
         --eval.batch_size=10 `
+        --eval.use_async_envs=false `
         --output_dir=$out `
-        --policy.device=cuda 2>&1 | Select-String -Pattern "success|pc_"
+        --policy.device=cuda *>> "E:\Robot_Sim\runs\pusht_sweep_full.log"
 }

@@ -20,8 +20,15 @@ OUT.mkdir(parents=True, exist_ok=True)
 ENV_ID = "gym_hil/PandaPickCubeBase-v0"
 
 
-def make_env():
-    return gym.make(ENV_ID, image_obs=False, reward_type="dense")
+def make_env(retries=8):
+    import time
+    for i in range(retries):
+        try:
+            return gym.make(ENV_ID, image_obs=False, reward_type="dense")
+        except ValueError:  # 간헐적 에셋 로드 실패(파일락) 재시도
+            if i == retries - 1:
+                raise
+            time.sleep(5)
 
 
 def flat_obs(obs):
@@ -69,7 +76,10 @@ class ScriptedExpert:
         return a
 
 
-def collect_demos(n_target, max_tries=200, max_steps=250):
+def collect_demos(n_target, max_tries=200, max_steps=250, noise_std=0.0, rng=None):
+    """noise_std>0 이면 DART: 실행 액션에 노이즈를 섞되 라벨은 전문가의 교정 액션 —
+    BC가 이탈 상태에서의 복구를 배우도록 튜브 커버리지를 만든다."""
+    rng = rng or np.random.default_rng(0)
     env = make_env()
     expert = ScriptedExpert(env)
     demos, tries, succ = [], 0, 0
@@ -80,8 +90,11 @@ def collect_demos(n_target, max_tries=200, max_steps=250):
         traj = []
         for _ in range(max_steps):
             a = expert.act()
-            traj.append((flat_obs(obs), a.copy()))
-            obs, r, term, trunc, info = env.step(a)
+            traj.append((flat_obs(obs), a.copy()))  # 라벨 = 교정 액션
+            exec_a = a.copy()
+            if noise_std > 0:
+                exec_a[:3] += rng.normal(0, noise_std, 3)
+            obs, r, term, trunc, info = env.step(exec_a)
             if term or trunc:
                 break
         if info.get("succeed", False):
@@ -135,22 +148,38 @@ def eval_policy(pol, mu, sd, device, n=50, max_steps=250):
     return succ / n
 
 
-def main():
+def stage_collect():
+    import pickle
+    rng = np.random.default_rng(0)
+    d0, sr0 = collect_demos(20, rng=rng)
+    d1, _ = collect_demos(40, noise_std=0.008, rng=rng)
+    d2, _ = collect_demos(40, noise_std=0.02, rng=rng)
+    demos = d0 + d1 + d2
+    rng.shuffle(demos)
+    with open(OUT / "demos.pkl", "wb") as f:
+        pickle.dump({"demos": demos, "expert_sr": sr0}, f)
+    print(f"collected {len(demos)} demos (DART mix), clean expert SR={sr0:.2f}")
+
+
+def stage_train(n, n_eval=40):
+    import pickle
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    demos, expert_sr = collect_demos(60)
-    print(f"expert: {len(demos)} demos collected, success_rate={expert_sr:.2f}")
-
-    results = {"expert_success_rate": round(expert_sr, 3), "bc": {}}
-    for n in [10, 30, 60]:
-        pol, mu, sd, loss = train_bc(demos[:n], device)
-        sr = eval_policy(pol, mu, sd, device)
-        results["bc"][str(n)] = {"success_rate": round(sr, 3), "final_mse": round(loss, 5)}
-        print(f"BC({n} demos): success_rate={sr:.2f}")
-        torch.save(pol.state_dict(), OUT / f"bc_{n}.pt")
-
-    (OUT / "results.json").write_text(json.dumps(results, indent=1), encoding="utf-8")
-    print(results)
+    with open(OUT / "demos.pkl", "rb") as f:
+        data = pickle.load(f)
+    pol, mu, sd, loss = train_bc(data["demos"][:n], device)
+    sr = eval_policy(pol, mu, sd, device, n=n_eval)
+    torch.save(pol.state_dict(), OUT / f"bc_{n}.pt")
+    res_p = OUT / "results.json"
+    results = json.loads(res_p.read_text()) if res_p.exists() else {
+        "expert_success_rate": round(data["expert_sr"], 3), "bc": {}}
+    results["bc"][str(n)] = {"success_rate": round(sr, 3), "final_mse": round(loss, 6)}
+    res_p.write_text(json.dumps(results, indent=1), encoding="utf-8")
+    print(f"BC({n}): success_rate={sr:.2f}")
 
 
 if __name__ == "__main__":
-    main()
+    import sys as _sys
+    if len(_sys.argv) > 1 and _sys.argv[1] == "collect":
+        stage_collect()
+    else:
+        stage_train(int(_sys.argv[1]))

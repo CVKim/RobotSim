@@ -18,3 +18,4 @@ tools/local_paths.py
 
 # 다운로드된 모델 가중치 (레포에 올리지 않음)
 models/
+.venv_isaac/

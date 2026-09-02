@@ -11,7 +11,7 @@ import numpy as np
 parser = argparse.ArgumentParser()
 parser.add_argument("--n_scenes", type=int, default=5)
 parser.add_argument("--out", default=r"E:\Robot_Sim\explore\sdg_test")
-args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
+args = parser.parse_args()  # blenderproc이 스크립트용 argv를 재구성해줌
 
 BOX = np.array([0.293, 0.219, 0.283])  # m
 rng = np.random.default_rng(0)
@@ -24,14 +24,14 @@ ground.enable_rigidbody(active=False, collision_shape="BOX")
 
 light = bproc.types.Light()
 light.set_type("AREA")
-light.set_location([0.5, -0.5, 2.5])
-light.set_energy(rng.uniform(80, 200))
 
 # 카메라 내파라미터: 실측 역산 (640x480, f=517px)
 K = np.array([[517.0, 0, 320.0], [0, 517.0, 240.0], [0, 0, 1.0]])
 bproc.camera.set_intrinsics_from_K_matrix(K, 640, 480)
 
 for scene_i in range(args.n_scenes):
+    light.set_location([rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(2, 3.2)])
+    light.set_energy(rng.uniform(60, 260))
     boxes = []
     n_layer = rng.integers(6, 13)  # 상층 박스 수 랜덤 (픽킹 진행 상태 재현)
     grid = [(gx, gy) for gx in range(4) for gy in range(3)]
@@ -50,7 +50,7 @@ for scene_i in range(args.n_scenes):
         mat.set_principled_shader_value("Roughness", rng.uniform(0.6, 0.9))
         b.replace_materials(mat)
         b.enable_rigidbody(active=True, collision_shape="BOX")
-        b.set_cp("category_id", 1)
+        b.set_cp("category_id", k + 1)
         boxes.append(b)
 
     bproc.object.simulate_physics_and_fix_final_poses(

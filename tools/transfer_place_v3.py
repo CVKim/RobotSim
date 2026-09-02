@@ -86,8 +86,6 @@ def suggest(session_name, model):
         grow = hole & (cv2.dilate(filled.astype(np.uint8), np.ones((3, 3), np.uint8)) > 0)
         hm[grow] = dil[grow]; filled |= grow
     env.heightmap[interior] = hm[interior]
-    dbg_masks = [int(env._placement_maps(r)[1].sum()) for r in (0, 1)]
-    print(f"  [dbg] interior cells={interior.sum()} filled={filled.sum()} valid_actions rot0/1={dbg_masks}")
     env.box = np.array([293.0, 219.0, BOX_H_MU])
 
     flat = env.action_mask().ravel()

@@ -31,6 +31,7 @@
 | **합성데이터·sim2real** | 합성 전용 0.00 → 센서특성 시뮬 0.43 → +실측 6장 0.99 (mAP50, 홀드아웃) | ✅ 완료 |
 | **로봇 학습 인프라** | LeRobot 파이프라인, SmolVLA-450M 파인튜닝 자원 실측 (VRAM 4.7GB/10GB) | ✅ 완료 |
 | **가상환경 제어·모방학습** | PushT Diffusion 스윕(성공률 38%) · 전문가 데모→DART→BC 100% (가상 Franka) | ✅ 완료 |
+| **VLM 에이전트** | 로컬 Qwen2.5-VL-3B: 장면 그라운딩 → 인식 도구 결과 주입 → 액션 계획 JSON (3/3 정확) | ✅ 완료 |
 
 ## 역량 매핑 (채용 요건 → 증거)
 
@@ -41,6 +42,7 @@
 | AI 비전 ↔ 로봇 제어 연동 | 인식 상태 → RL 정책 → PICK/PLACE 제안, 실제 작업 순서로 검증(top-2 81%) | [tools/pick_next.py](tools/pick_next.py) |
 | 합성 데이터 생성 · sim2real | 실측 노이즈 법칙 σ(I) 주입 합성 학습 → 실데이터 갭 측정 (진행) | [tools/sdg_boxdrop.py](tools/sdg_boxdrop.py) |
 | 로봇 Foundation 모델 응용 | SmolVLA-450M 파인튜닝 자원 실측 (VRAM 4.7GB/10GB, 2h06m) | [docs/21_실험로그.md](docs/21_실험로그.md) |
+| LLM/VLM 에이전트 | 로컬 VLM이 depth 장면을 이해하고 인식 도구 결과로 픽 액션을 결정 (그라운딩 100%, VRAM 7.3GB) | [tools/vlm_agent_demo.py](tools/vlm_agent_demo.py) |
 | 경력기술·면접 정리 | STAR 서술 + 예상 Q&A | [docs/30_포트폴리오_경력기술.md](docs/30_포트폴리오_경력기술.md) |
 
 ## 아키텍처

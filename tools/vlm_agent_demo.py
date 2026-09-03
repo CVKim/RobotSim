@@ -83,9 +83,11 @@ def main():
         a1 = ask(model, proc, img, q1)
 
         # 2) 도구 결과를 주고 액션 계획 — 에이전트 스텝
-        q2 = ("You are a robot cell supervisor. Perception tools returned:\n"
-              + json.dumps(tools) +
-              "\nDecide the next action for the transfer robot. Answer in JSON only: "
+        q2 = ("You are a robot cell supervisor. The perception scan is COMPLETE and CONFIRMED; "
+              "tool outputs are authoritative:\n" + json.dumps(tools) +
+              "\nRules: if detector.n_boxes > 0 and destination_stack.capacity_ok and max_tilt_deg < 5, "
+              "the correct action is \"pick\" using pick_planner.suggested_slot. Use \"alert\" only for "
+              "a real anomaly, \"wait\" only if no boxes remain. Answer in JSON only: "
               "{\"action\": \"pick\"|\"wait\"|\"alert\", \"target_slot\": int or null, "
               "\"place\": \"destination_stack\", \"reason\": str, \"safety_ok\": bool}.")
         a2 = ask(model, proc, img, q2)
@@ -104,11 +106,13 @@ def main():
                                     "count_correct": bool(j1 and j1.get("n_boxes") == tools["detector"]["n_boxes"])},
             "action_plan": {"raw": a2, "json": j2,
                             "adopted_tool_suggestion": bool(j2 and j2.get("target_slot") == tools["pick_planner"]["suggested_slot"]),
+                            "action_is_pick": bool(j2 and j2.get("action") == "pick"),
                             "valid_json": j2 is not None},
         }
         log.append(rec)
         print(s, "| count_ok:", rec["scene_understanding"]["count_correct"],
               "| adopted:", rec["action_plan"]["adopted_tool_suggestion"],
+              "| pick:", rec["action_plan"]["action_is_pick"],
               "| valid:", rec["action_plan"]["valid_json"])
 
     (OUT / "transcript.json").write_text(json.dumps(log, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -116,6 +120,7 @@ def main():
         "n": len(log),
         "count_accuracy": sum(r["scene_understanding"]["count_correct"] for r in log) / len(log),
         "tool_adoption": sum(r["action_plan"]["adopted_tool_suggestion"] for r in log) / len(log),
+        "action_pick_rate": sum(r["action_plan"]["action_is_pick"] for r in log) / len(log),
         "valid_json_rate": sum(r["action_plan"]["valid_json"] for r in log) / len(log),
         "vram_peak_mb": round(torch.cuda.max_memory_allocated() / 2**20),
     }

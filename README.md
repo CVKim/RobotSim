@@ -28,7 +28,7 @@
 | **센서 모델링** | ToF 노이즈 실측 모델 σ(I) — 합성데이터 캘리브레이션 근거 | ✅ 완료 |
 | **강화학습** | 실측 치수 기반 팔레타이징 환경 구축 + MaskablePPO (휴리스틱 +14.7%) | ✅ 완료 |
 | **인식-정책 통합** | 실장면 상태 이식 → 최소동선 PICK / 목적지 PLACE 제안 (실제 순서로 검증) | ✅ 완료 |
-| **합성데이터·sim2real** | 합성 전용 0.00 → 센서특성 시뮬 0.43 → +실측 6장 0.99 (mAP50, 홀드아웃) | ✅ 완료 |
+| **합성데이터·sim2real** | 합성 전용 0.00 → 센서특성 시뮬 0.43 → +실측 6장 0.99 · Isaac Replicator 0.56 vs BlenderProc 0.43 | ✅ 완료 |
 | **로봇 학습 인프라** | LeRobot 파이프라인, SmolVLA-450M 파인튜닝 자원 실측 (VRAM 4.7GB/10GB) | ✅ 완료 |
 | **가상환경 제어·모방학습** | PushT Diffusion 스윕(성공률 38%) · 전문가 데모→DART→BC 100% (가상 Franka) | ✅ 완료 |
 | **VLM 에이전트** | 로컬 Qwen2.5-VL-3B: 장면 그라운딩 → 인식 도구 결과 주입 → 액션 계획 JSON (3/3 정확) | ✅ 완료 |
@@ -113,6 +113,16 @@
 | 위 + 실측 6장 co-training | **0.988** |
 
 ![ladder](assets/sim2real_ladder.png)
+
+SDG 툴 비교 — 같은 실측 조건·노이즈 레시피로 Isaac Sim 4.5 Replicator와 BlenderProc을 각각 300프레임 생성해 동일 홀드아웃 평가:
+
+| 툴 | 실측 mAP@50 | 비고 |
+|---|---|---|
+| BlenderProc 2.8 | 0.428 | 물리 드롭, Cycles |
+| Isaac Sim 4.5 Replicator | **0.555** | 정치 배치, RTX 레이트레이싱 |
+
+![tools](assets/sdg_tool_compare.png)
+![side](assets/sdg_tools_side_by_side.png)
 
 ### 5. 가상환경 제어·모방학습 (MuJoCo Franka)
 

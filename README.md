@@ -40,7 +40,7 @@
 | 물리엔진 시뮬레이션 기반 강화학습 환경 구축 | 실측 치수 시드 팔레타이징 환경 직접 설계 → PPO가 휴리스틱 +14.7% | [tools/palletize_env.py](tools/palletize_env.py) |
 | 로봇 비전 무교시(teaching-less) | 라벨 0장으로 픽포인트(중심+법선) 자동 생성, 기울기 0.95° | [tools/binpick_pickpoints.py](tools/binpick_pickpoints.py) |
 | AI 비전 ↔ 로봇 제어 연동 | 인식 상태 → RL 정책 → PICK/PLACE 제안, 실제 작업 순서로 검증(top-2 81%) | [tools/pick_next.py](tools/pick_next.py) |
-| 합성 데이터 생성 · sim2real | 실측 노이즈 법칙 σ(I) 주입 합성 학습 → 실데이터 갭 측정 (진행) | [tools/sdg_boxdrop.py](tools/sdg_boxdrop.py) |
+| 합성 데이터 생성 · sim2real | 합성 전용 0.00 → 센서특성 시뮬 0.43 → +실측 6장 0.99 (실측 홀드아웃 mAP50) | [tools/sdg_boxdrop.py](tools/sdg_boxdrop.py) |
 | 로봇 Foundation 모델 응용 | SmolVLA-450M 파인튜닝 자원 실측 (VRAM 4.7GB/10GB, 2h06m) | [docs/21_실험로그.md](docs/21_실험로그.md) |
 | LLM/VLM 에이전트 | 로컬 VLM이 depth 장면을 이해하고 인식 도구 결과로 픽 액션을 결정 (그라운딩 100%, VRAM 7.3GB) | [tools/vlm_agent_demo.py](tools/vlm_agent_demo.py) |
 | 경력기술·면접 정리 | STAR 서술 + 예상 Q&A | [docs/30_포트폴리오_경력기술.md](docs/30_포트폴리오_경력기술.md) |

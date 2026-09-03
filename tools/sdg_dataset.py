@@ -13,7 +13,7 @@ import h5py
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
-from binpick_topface import detect_boxes  # noqa: E402
+from binpick_topface import detect_boxes, detect_boxes_v2  # noqa: E402
 from mim_loader import load_session, valid_mask  # noqa: E402
 
 try:
@@ -99,9 +99,13 @@ def convert_synth(src_dir, dst_dir, noisy, val_frac=0.1, seed=0):
     print(f"{dst_dir}: {len(files)} scenes ({n_val} val), noisy={noisy}")
 
 
-def build_real_eval(dst_dir="real_eval"):
-    """실측 30세션 → 동일 렌더링 + 검출 pseudo-GT (val 전용 데이터셋)."""
+def build_real_eval(dst_dir="real_eval", detector="v1"):
+    """실측 30세션 → 동일 렌더링 + 검출 pseudo-GT (val 전용 데이터셋).
+
+    detector="v1": detect_boxes (148박스; 2층 중앙 2개 병합 실패·층 말미 잔여 박스 누락 → 19개 미포함)
+    detector="v2": detect_boxes_v2 (167박스, 30프레임 RGB 대조로 검증된 완전 라벨) → real_eval_v2 권장."""
     dst = ROOT / dst_dir
+    det = detect_boxes if detector == "v1" else detect_boxes_v2
     for sub in ["images/train", "images/val", "labels/train", "labels/val"]:
         (dst / sub).mkdir(parents=True, exist_ok=True)
     n_boxes = 0
@@ -109,7 +113,7 @@ def build_real_eval(dst_dir="real_eval"):
         sess = load_session(s)
         v = valid_mask(sess)
         img = depth_to_img(sess["D"], v)
-        _, _, boxes = detect_boxes(sess)
+        _, _, boxes = det(sess)
         h, w = sess["D"].shape
         lines = []
         for b in boxes:
@@ -121,7 +125,7 @@ def build_real_eval(dst_dir="real_eval"):
         cv2.imwrite(str(dst / f"images/val/{s.name}.png"), img)
         (dst / f"labels/val/{s.name}.txt").write_text("\n".join(lines), encoding="utf-8")
     write_yaml(dst)
-    print(f"real_eval: 30 sessions, {n_boxes} pseudo-GT boxes")
+    print(f"{dst_dir}: 30 sessions, {n_boxes} pseudo-GT boxes ({detector})")
 
 
 if __name__ == "__main__":
@@ -129,9 +133,10 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["real", "synth"], required=True)
     ap.add_argument("--src", default="sdg_data")
+    ap.add_argument("--detector", choices=["v1", "v2"], default="v1", help="실측 pseudo-GT 검출기")
     args = ap.parse_args()
     if args.mode == "real":
-        build_real_eval()
+        build_real_eval("real_eval" if args.detector == "v1" else "real_eval_v2", detector=args.detector)
     else:
         convert_synth(args.src, "sdg_yolo_clean", noisy=False)
         convert_synth(args.src, "sdg_yolo_noisy", noisy=True)

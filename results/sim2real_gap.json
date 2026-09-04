@@ -1,0 +1,16 @@
+{
+ "clean": {
+  "synth_map50": 0.995,
+  "synth_map5095": 0.953,
+  "real_map50": 0.0002,
+  "real_map5095": 0.0001,
+  "gap_map50": 0.9948
+ },
+ "noisy": {
+  "synth_map50": 0.9899,
+  "synth_map5095": 0.8665,
+  "real_map50": 0.4319,
+  "real_map5095": 0.215,
+  "gap_map50": 0.558
+ }
+}

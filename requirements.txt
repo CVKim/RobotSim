@@ -1,0 +1,35 @@
+# Robot_Sim 실행 환경 (Windows 11 + Python 3.12, .venv 기준 실측 버전)
+#
+# 중요: torch 2.9~2.11 은 Windows 26200 에서 c10.dll WinError 1114 로 임포트가 실패한다
+# (CPU 빌드 포함, pytorch#166628 리그레션). mujoco 3.2.7+ 도 같은 증상.
+# 아래 버전 조합이 이 머신에서 검증된 유일한 조합이다 (docs/21 환경 이슈 기록 참조).
+#
+#   pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu126
+
+# 인식 코어 (robotsim_perception 패키지는 이 셋만 필요)
+numpy==2.2.6
+opencv-python==5.0.0.93
+tifffile==2026.8.23
+
+# 시뮬레이션 (셀 트윈 / 모방학습)
+mujoco==3.1.6
+gymnasium==1.3.0
+
+# 강화학습
+stable_baselines3==2.9.0
+sb3_contrib==2.9.0
+
+# 학습 검출·세그멘테이션
+ultralytics==8.4.138
+torch==2.8.0+cu126
+torchvision==0.23.0+cu126
+
+# 데이터·도표
+matplotlib==3.11.1
+h5py==3.16.0
+scipy==1.18.1
+pytest>=7
+
+# 선택 (VLA/VLM 트랙에서만 사용)
+# lerobot==0.6.1
+# transformers==5.5.4

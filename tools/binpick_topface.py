@@ -490,7 +490,8 @@ def detect_boxes_v2(sess, tol_mm=40, min_area_px=700, conf_src=0.55, support_min
                     contra_max=0.08, occ_max=0.10, valid_min=0.15, in_image_min=0.90,
                     ring_w=0.0, bnd_w=1.0, bnd_min=-0.25, search_mm=36.0, search_step_mm=12.0, max_rounds=2,
                     dense_scan=True, replace_frac=0.3, layer_fallback=True, fallback_min_strong=1,
-                    fallback_k=8, conf_min=None, grid_res_mm=6.0, verbose=False, debug=None):
+                    fallback_k=8, layer_pitch_mm=283.0, conf_min=None, grid_res_mm=6.0,
+                    verbose=False, debug=None):
     """detect_boxes 래핑: (1) 박스별 신뢰도 (2) 격자 기반 결손 셀 보완('inferred').
 
     반환 (top_d, mask, boxes). boxes 의 각 dict 는 v1 키(area_px, dims_mm, depth_mm, rect_px)에
@@ -545,6 +546,13 @@ def detect_boxes_v2(sess, tol_mm=40, min_area_px=700, conf_src=0.55, support_min
         if pick is not None and pick[0] != top_d:
             top_d, mask, top, boxes, geoms, strong = pick
             layer_switched = True
+
+        # [시도했으나 되돌림] 박스 높이(283mm)만큼 위 층을 직접 검출해 SKU 치수에 맞는 박스가
+        # 있으면 올라가는 '상층 프로브'를 넣어 보았다. 트윈의 잔여 2개 케이스는 고쳐졌지만
+        # (FP 9 -> 0) 실측에서 364085 세션이 12 -> 3, 375446 이 4 -> 1 로 크게 퇴행했다.
+        # 상층 프로브가 실제 상면보다 위(설비 상단·노이즈 잔재)에서 SKU 치수에 우연히 맞는
+        # 조각을 찾아 올라가 버리기 때문이다. 순이득이 음수라 제거했다.
+        # 잔여 <=3개 실패 모드는 미해결로 남는다 (README 8절 참조).
     for b in boxes:
         b["layer_fallback"] = layer_switched
 

@@ -1,0 +1,8 @@
+{
+ "noisy_only": {
+  "holdout_map50": 0.428
+ },
+ "noisy_plus_6real": {
+  "holdout_map50": 0.9882
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "expert_success_rate": 1.0,
+ "bc": {
+  "20": {
+   "success_rate": 1.0,
+   "final_mse": 0.000155
+  },
+  "50": {
+   "success_rate": 1.0,
+   "final_mse": 0.000245
+  },
+  "100": {
+   "success_rate": 1.0,
+   "final_mse": 6.2e-05
+  }
+ }
+}

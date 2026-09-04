@@ -19,6 +19,7 @@
 | [docs/02_환경_셋업.md](docs/02_환경_셋업.md) | Windows/WSL2/Isaac Sim 4.5 설치 절차 |
 | [docs/03_공개전략_및_데이터보안.md](docs/03_공개전략_및_데이터보안.md) | ⚠️ 공장 데이터 취급 원칙 + 공개 채널 전략 |
 | [docs/40_패키지_사용법.md](docs/40_패키지_사용법.md) | `robotsim_perception` 패키지 — CLI·API·JSON 스키마·테스트·알려진 한계 |
+| [results/](results/) | **README 수치의 원본 JSON** (익명화된 집계 결과 12종) |
 | [docs/research/](docs/research/) | 8개 도메인 리서치 원본 + 검증 리포트 (출처 링크 포함) |
 
 ## 프로젝트 구성
@@ -304,7 +305,19 @@ v2 검출기는 v1 대비 4배 느리고(226 ms) 격자 보완 셀이 무효 블
 
 ```powershell
 E:\Robot_Sim\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu126
 python -c "import torch; print(torch.cuda.is_available(), torch.cuda.device_count())"
+```
+
+`requirements.txt` 는 이 머신에서 검증된 버전 조합이다 — **torch 2.9~2.11 과 mujoco 3.2.7+ 는
+Windows 26200 에서 DLL 초기화 실패(WinError 1114)** 하므로 torch 2.8.0+cu126 / mujoco 3.1.6 으로 고정돼 있다.
+
+셀 트윈·폐루프 재현:
+
+```powershell
+.venv\Scripts\python.exe tools/twin_detect_eval.py --scenes 24   # 절대 GT 검출 정확도
+.venv\Scripts\python.exe tools/twin_closed_loop.py --episodes 10  # 인식->제어 폐루프
+python -m pytest tests -q                                          # 패키지 테스트 27개
 ```
 
 셋업이 안 돼 있으면 `docs/02_환경_셋업.md` ①부터.

@@ -112,7 +112,11 @@ def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
                 hzz = float(rng.uniform(0.12, 0.62))
                 px = ex * float(rng.uniform(0.75, 1.75)) + float(rng.normal(0, 0.10))
                 py = ey * float(rng.uniform(0.70, 1.60)) + float(rng.normal(0, 0.10))
+                # 소스 팔레트와 목적지 팔레트 위에는 설비를 두지 않는다.
+                # (목적지 반경을 비우지 않으면 설비 블록이 적재 위치와 충돌해 놓은 박스가 튕겨 나간다)
                 if abs(px) < 0.62 and abs(py) < 0.62:
+                    continue
+                if np.hypot(px - dx, py - dy) < 0.75:
                     continue
                 parts.append(f'    <geom name="equip{k}" type="box" pos="{px:.3f} {py:.3f} {hzz:.3f}" '
                              f'size="{hxx:.3f} {hyy:.3f} {hzz:.3f}" material="steel"/>\n')

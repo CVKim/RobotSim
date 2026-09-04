@@ -30,6 +30,14 @@ def _binpick_dir():
     return sessions[0] if sessions else None
 
 
+def _all_sessions():
+    """BINPICK_DIR 하위 전체 세션 (SESSION 의 부모에서 유도 — BINPICK_DIR 은 함수 지역)."""
+    if SESSION is None:
+        return []
+    root = Path(SESSION).parent
+    return sorted(d for d in root.iterdir() if d.is_dir() and (d / "4_tof_D.mim").exists())
+
+
 SESSION = _binpick_dir()
 pytestmark = pytest.mark.skipif(SESSION is None, reason="BINPICK_DIR not available (local_paths.py or env)")
 
@@ -79,3 +87,29 @@ def test_cli_on_real_session(tmp_path, result):
     assert d["schema_version"] == "1.0" and d["n_boxes"] == len(result.boxes)
     assert d["latency_ms"] > 0 and "load" in d["latency_breakdown_ms"]
     assert out_png.exists() and out_png.stat().st_size > 10000
+
+
+def test_parity_all_sessions_v1_and_v2():
+    """전 세션 파리티 — 패키지와 tools 가 v1/v2 모두 같은 검출 수를 내야 한다.
+
+    이전 파리티 테스트는 세션 1개만 검사해, 알고리즘이 두 곳에 복제돼 있던 시절
+    센티넬 오염 버그 수정이 한쪽에만 적용된 불일치(148 vs 152)를 놓쳤다.
+    이제 알고리즘은 robotsim_perception.geometry 한 곳이지만, 배선이 어긋나면 여기서 잡힌다.
+    """
+    from binpick_topface import detect_boxes as tools_v1, detect_boxes_v2 as tools_v2
+    from mim_loader import load_session
+    from robotsim_perception import load_frame
+    from robotsim_perception.detect import detect_boxes as pkg
+
+    sessions = _all_sessions()
+    assert sessions, "no sessions"
+    n1 = n2 = p1 = p2 = 0
+    for d in sessions:
+        sess, frame = load_session(d), load_frame(d)
+        a, b = len(tools_v1(sess)[2]), len(tools_v2(sess)[2])
+        c, e = len(pkg(frame)), len(pkg(frame, lattice=True))
+        assert (a, b) == (c, e), f"{d.name}: tools v1/v2 ({a},{b}) != package ({c},{e})"
+        n1, n2, p1, p2 = n1 + a, n2 + b, p1 + c, p2 + e
+    assert (n1, n2) == (p1, p2)
+    assert n1 == 152, f"v1 baseline changed: {n1} != 152"
+    assert n2 == 167, f"v2 baseline changed: {n2} != 167"

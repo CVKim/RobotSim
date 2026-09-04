@@ -31,6 +31,9 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--tol", type=float, default=40.0, help="top-layer depth tolerance mm (default %(default)s)")
     r.add_argument("--min-area", type=int, default=700, help="min component area px (default %(default)s)")
     r.add_argument("--min-confidence", type=float, default=0.0, help="drop boxes below this confidence")
+    r.add_argument("--lattice", action="store_true",
+                   help="v2: lattice gap completion + layer selection "
+                        "(30 real frames: 152 -> 167 boxes; ~52 -> ~340 ms/frame)")
     r.add_argument("--quiet", action="store_true", help="suppress summary on stdout")
 
     sub.add_parser("version", help="print package and schema version")
@@ -53,7 +56,7 @@ def main(argv=None) -> int:
     try:
         res = run_session(args.session_dir, sku=sku, dest_xy_mm=dest, col_tol_mm=args.col_tol,
                           tol_mm=args.tol, min_area_px=args.min_area, sku_tol=args.sku_tol,
-                          min_confidence=args.min_confidence)
+                          min_confidence=args.min_confidence, lattice=args.lattice)
     except FileNotFoundError as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
@@ -72,7 +75,8 @@ def main(argv=None) -> int:
         print(f"boxes     : {len(res.boxes)}")
         for b in res.boxes:
             print(f"  [{b.id}] L{b.dims_mm[0]:.0f} x W{b.dims_mm[1]:.0f} mm  z={b.depth_mm:.0f}  "
-                  f"tilt={b.tilt_deg:.1f}deg  conf={b.confidence:.2f}  center=({b.center_mm[0]:.0f},{b.center_mm[1]:.0f})")
+                  f"tilt={b.tilt_deg:.1f}deg  conf={b.confidence:.2f}  {b.source:8s} "
+                  f"center=({b.center_mm[0]:.0f},{b.center_mm[1]:.0f})")
         if res.plan:
             seq = " -> ".join(str(s.box_id) for s in res.plan)
             print(f"pick plan : {seq}  (first dist {res.plan[0].dist_mm:.0f} mm to dest)")

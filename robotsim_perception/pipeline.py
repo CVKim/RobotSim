@@ -64,12 +64,14 @@ class Result:
 
 def run_frame(frame: Frame, sku: Optional[Sequence[float]] = DEFAULT_SKU, dest_xy_mm=DEFAULT_DEST_XY_MM,
               col_tol_mm: float = DEFAULT_COL_TOL_MM, tol_mm: float = 40, min_area_px: int = 700,
-              sku_tol: Optional[float] = None, min_confidence: float = 0.0, load_ms: Optional[float] = None) -> Result:
+              sku_tol: Optional[float] = None, min_confidence: float = 0.0,
+              lattice: bool = False, load_ms: Optional[float] = None) -> Result:
     """메모리 상의 Frame 에 대해 전체 파이프라인 실행."""
     t0 = time.perf_counter()
     top = detect_top_layer(frame, tol_mm=tol_mm)
     t1 = time.perf_counter()
-    boxes = detect_boxes(frame, sku=sku, tol_mm=tol_mm, min_area_px=min_area_px, sku_tol=sku_tol, top_layer=top)
+    boxes = detect_boxes(frame, sku=sku, tol_mm=tol_mm, min_area_px=min_area_px, sku_tol=sku_tol,
+                         top_layer=None if lattice else top, lattice=lattice)
     if min_confidence > 0:
         boxes = [b for b in boxes if b.confidence >= min_confidence]
         for k, b in enumerate(boxes):

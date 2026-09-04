@@ -19,6 +19,7 @@ from typing import Optional, Sequence
 import cv2
 import numpy as np
 
+from . import geometry
 from .frame import Frame
 
 DEFAULT_SKU = (293.0, 219.0, 283.0)  # (L, W, H) mm — 30세션 실측 평균 (293.0 / 218.8 / 283)
@@ -54,6 +55,7 @@ class Box:
     center_px: tuple          # (u, v) int
     plane_rms_mm: float
     fill: float               # 요소 픽셀 수 / minAreaRect 면적
+    source: str = "detected"  # 'detected' | 'inferred' (lattice=True 에서 격자로 보완된 셀)
 
     def corners_px(self) -> np.ndarray:
         return cv2.boxPoints(self.rect_px)
@@ -137,91 +139,87 @@ def _confidence(dims_mm, fill, plane_rms, sku) -> float:
 
 # ---------------------------------------------------------------- boxes
 
-def detect_boxes(frame: Frame, sku: Optional[Sequence[float]] = DEFAULT_SKU, tol_mm: float = 40,
-                 min_area_px: int = 700, sku_tol: Optional[float] = None,
-                 top_layer: Optional[TopLayer] = None) -> list:
-    """최상층 박스 상면 검출 → list[Box].
+def _sess_view(frame: Frame) -> dict:
+    """geometry 모듈이 받는 딕셔너리 형태로 Frame 을 노출 (복사 없음)."""
+    return {"X": frame.X, "Y": frame.Y, "D": frame.D, "I": frame.I}
 
-    sku      : (L, W, H) mm. 신뢰도 계산 및 sku_tol 필터에 사용. None 이면 치수 항 제외.
-    sku_tol  : None 이면 필터 없음(tools/binpick_topface 와 동일 검출 집합). 0.5 등 값을 주면
-               L,W 가 SKU 대비 ±sku_tol 비율 밖인 후보(병합·부분 박스) 를 제거.
-    top_layer: 미리 계산한 TopLayer 를 재사용할 때.
-    """
-    D, X, Y, I, valid = frame.D, frame.X, frame.Y, frame.I, frame.valid
-    if top_layer is None:
-        top_layer = detect_top_layer(frame, tol_mm=tol_mm)
-    if not top_layer.ok:
-        return []
-    top_d = top_layer.depth_mm
-    mask = top_layer.mask.copy()
 
-    # 박스 간 이음새 = 깊이 그래디언트 에지 → 마스크에서 제거해 분리 유도
-    Ds = cv2.medianBlur(D.astype(np.float32), 5)
-    gx = cv2.Sobel(Ds, cv2.CV_32F, 1, 0, ksize=3)
-    gy = cv2.Sobel(Ds, cv2.CV_32F, 0, 1, ksize=3)
-    grad = np.hypot(gx, gy)
-    mask &= grad < 70.0  # mm/px
-
-    m8 = (mask * 255).astype(np.uint8)
-    kernel3 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    m8 = cv2.morphologyEx(m8, cv2.MORPH_CLOSE, kernel3, iterations=2)
-    m8 = cv2.morphologyEx(m8, cv2.MORPH_OPEN, kernel3, iterations=1)
-
-    # ToF 강도(I) 채널 에지로 박스 이음새 절단
-    In = np.log1p(np.clip(I, 0, None))
-    In = cv2.normalize(In, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-    In = cv2.GaussianBlur(In, (3, 3), 0)
-    edges = cv2.Canny(In, 40, 100)
-    edges = cv2.dilate(edges, kernel3, iterations=1)
-
-    sep = m8.copy()
-    sep[edges > 0] = 0
-    n, labels = cv2.connectedComponents(sep)
-
-    boxes = []
-    for i in range(1, n):
-        comp = (labels == i)
-        if comp.sum() < min_area_px:
-            continue
-        comp = cv2.dilate((comp * 255).astype(np.uint8), kernel3, iterations=2) > 0
-        comp &= (m8 > 0)
-        # m8 은 MORPH_CLOSE 로 무효 픽셀 구멍이 메워져 있어, 그 픽셀의 X/Y 센티넬(8191.75)이
-        # minAreaRect 에 섞이면 13m 짜리 사각형이 나와 종횡비 필터에서 정상 박스가 탈락한다.
-        # (셀 트윈에서 발견 — 실측 30프레임에서도 4개 박스가 이 경로로 누락되고 있었다.)
-        comp &= frame.valid
-        if comp.sum() < min_area_px:
-            continue
-        ys, xs = np.nonzero(comp)
-        pts_mm = np.stack([X[comp], Y[comp]], axis=-1).astype(np.float32)
-        rect_mm = cv2.minAreaRect(pts_mm)
-        (w_mm, h_mm) = rect_mm[1]
-        rect_px = cv2.minAreaRect(np.stack([xs, ys], axis=-1).astype(np.float32))
-        rect_area = max(rect_px[1][0] * rect_px[1][1], 1)
-        fill = comp.sum() / rect_area
-        aspect = max(w_mm, h_mm) / max(min(w_mm, h_mm), 1)
-        if fill < 0.6 or aspect > 3.5:
-            continue
-        dims = (round(float(max(w_mm, h_mm)), 1), round(float(min(w_mm, h_mm)), 1))
-        if sku is not None and sku_tol is not None:
-            if not (abs(dims[0] - sku[0]) <= sku_tol * sku[0] and abs(dims[1] - sku[1]) <= sku_tol * sku[1]):
-                continue
-
+def _to_box(frame: Frame, b: dict, sku, box_id: int) -> Box:
+    """geometry 가 낸 박스 딕셔너리 -> Box (평면 피팅으로 중심·법선·기울기 추가)."""
+    D, X, Y = frame.D, frame.X, frame.Y
+    pts = cv2.boxPoints(b["rect_px"]).astype(np.int32)
+    poly = np.zeros(D.shape, np.uint8)
+    cv2.fillPoly(poly, [pts], 1)
+    comp = (poly > 0) & frame.valid & (np.abs(D - b["depth_mm"]) < 60.0)
+    if comp.sum() >= 30:
         pts3 = np.stack([X[comp], Y[comp], D[comp]], axis=-1).astype(np.float64)
         c, nrm, rms = fit_plane(pts3)
-        tilt = float(np.degrees(np.arccos(min(abs(float(nrm[2])), 1.0))))
-        (cx, cy), (rw, rh), ang = rect_px
-        boxes.append(Box(
-            id=len(boxes),
-            center_mm=(round(float(c[0]), 1), round(float(c[1]), 1), round(float(c[2]), 1)),
-            dims_mm=dims,
-            tilt_deg=round(tilt, 2),
-            normal=(round(float(nrm[0]), 4), round(float(nrm[1]), 4), round(float(nrm[2]), 4)),
-            rect_px=((float(cx), float(cy)), (float(rw), float(rh)), float(ang)),
-            confidence=_confidence(dims, float(fill), rms, sku),
-            depth_mm=round(float(np.median(D[comp])), 1),
-            area_px=int(comp.sum()),
-            center_px=(int(round(xs.mean())), int(round(ys.mean()))),
-            plane_rms_mm=round(rms, 2),
-            fill=round(float(fill), 3),
-        ))
+    else:                       # 상면 픽셀이 거의 없는 추론 셀 — rect 중심으로 대체
+        cxy = pts.mean(axis=0)
+        c = np.array([float(np.median(X[comp])) if comp.any() else 0.0,
+                      float(np.median(Y[comp])) if comp.any() else 0.0,
+                      float(b["depth_mm"])])
+        nrm, rms = np.array([0.0, 0.0, -1.0]), 0.0
+    tilt = float(np.degrees(np.arccos(min(abs(float(nrm[2])), 1.0))))
+    (cx, cy), (rw, rh), ang = b["rect_px"]
+    dims = (float(b["dims_mm"][0]), float(b["dims_mm"][1]))
+    rect_area = max(rw * rh, 1.0)
+    fill = float(min(b["area_px"] / rect_area, 1.0))
+    conf = b.get("confidence")
+    return Box(
+        id=box_id,
+        center_mm=(round(float(c[0]), 1), round(float(c[1]), 1), round(float(c[2]), 1)),
+        dims_mm=(round(dims[0], 1), round(dims[1], 1)),
+        tilt_deg=round(tilt, 2),
+        normal=(round(float(nrm[0]), 4), round(float(nrm[1]), 4), round(float(nrm[2]), 4)),
+        rect_px=((float(cx), float(cy)), (float(rw), float(rh)), float(ang)),
+        confidence=float(conf) if conf is not None else _confidence(dims, fill, rms, sku),
+        depth_mm=round(float(b["depth_mm"]), 1),
+        area_px=int(b["area_px"]),
+        center_px=(int(round(cx)), int(round(cy))),
+        plane_rms_mm=round(float(rms), 2),
+        fill=round(fill, 3),
+        source=str(b.get("source", "detected")),
+    )
+
+
+def detect_boxes(frame: Frame, sku: Optional[Sequence[float]] = DEFAULT_SKU, tol_mm: float = 40,
+                 min_area_px: int = 700, sku_tol: Optional[float] = None,
+                 top_layer: Optional[TopLayer] = None, lattice: bool = False,
+                 min_confidence: float = 0.0) -> list:
+    """최상층 박스 상면 검출 -> list[Box].
+
+    알고리즘은 robotsim_perception.geometry 한 곳에만 있다 (예전에는 여기와 tools 에 복제돼
+    있어 센티넬 오염 버그를 두 번 고쳐야 했다).
+
+    lattice  : True 면 v2 — 박스별 신뢰도 + 격자 기반 결손 보완('inferred') + 층 선택 규칙.
+               실측 30프레임 기준 v1 152 박스 vs **v2 167 박스**(RGB 대조로 검증된 실제 개수).
+               대가는 지연(52 -> 약 340 ms/프레임).
+    sku      : (L, W, H) mm. 신뢰도 계산 및 sku_tol 필터에 사용. None 이면 치수 항 제외.
+    sku_tol  : None 이면 필터 없음. 0.5 등을 주면 L,W 가 SKU 대비 ±sku_tol 밖인 후보를 제거.
+    top_layer: 미리 계산한 TopLayer 를 재사용할 때 (v1 경로에서만 사용).
+    """
+    sess = _sess_view(frame)
+    if lattice:
+        _, _, raw = geometry.detect_boxes_v2(sess, tol_mm=tol_mm, min_area_px=min_area_px,
+                                             conf_min=min_confidence or None)
+    else:
+        if top_layer is None:
+            top_layer = detect_top_layer(frame, tol_mm=tol_mm)
+        if not top_layer.ok:
+            return []
+        _, _, raw = geometry._detect_boxes_at(sess, top_layer.depth_mm,
+                                              tol_mm=tol_mm, min_area_px=min_area_px)
+    boxes = []
+    for b in raw:
+        dims = (float(b["dims_mm"][0]), float(b["dims_mm"][1]))
+        if sku is not None and sku_tol is not None:
+            if not (abs(dims[0] - sku[0]) <= sku_tol * sku[0]
+                    and abs(dims[1] - sku[1]) <= sku_tol * sku[1]):
+                continue
+        boxes.append(_to_box(frame, b, sku, len(boxes)))
+    if min_confidence > 0:
+        boxes = [b for b in boxes if b.confidence >= min_confidence]
+        for i, b in enumerate(boxes):
+            b.id = i
     return boxes

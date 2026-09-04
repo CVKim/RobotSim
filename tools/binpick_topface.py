@@ -91,6 +91,12 @@ def _detect_boxes_at(sess, top_d, tol_mm=40, min_area_px=700):
         # 에지로 깎인 영역 복원(살짝 팽창) 후 top-layer 마스크로 제한
         comp = cv2.dilate((comp * 255).astype(np.uint8), kernel3, iterations=2) > 0
         comp &= (m8 > 0)
+        # m8 은 MORPH_CLOSE 를 거쳐 무효 픽셀 구멍이 메워져 있다. 그 픽셀의 X/Y 는
+        # 센티넬(8191.75)이라 minAreaRect 가 13m 짜리 사각형을 만든다(셀 트윈에서 발견).
+        # 미터릭 계산에는 반드시 유효 픽셀만 사용한다.
+        comp &= valid
+        if comp.sum() < min_area_px:
+            continue
         ys, xs = np.nonzero(comp)
         # 미터릭 치수: X/Y 좌표맵(mm)에서 min-area rect
         pts_mm = np.stack([X[comp], Y[comp]], axis=-1).astype(np.float32)
@@ -508,21 +514,37 @@ def detect_boxes_v2(sess, tol_mm=40, min_area_px=700, conf_src=0.55, support_min
     top_d, mask, boxes_v1 = detect_boxes(sess, tol_mm=tol_mm, min_area_px=min_area_px)
     top, valid, boxes, geoms, strong = _annotate_layer(sess, top_d, boxes_v1, tol_mm, conf_src)
     layer_switched = False
-    if layer_fallback and not strong:
+    if layer_fallback:
+        # 층 선택: 히스토그램 질량이 가장 큰 피크가 항상 상면인 것은 아니다. 평평한 바닥·데크가
+        # ROI 를 지배하면 질량 1위가 바닥이 된다(셀 트윈에서 발견: 바닥 4184mm 가 질량 1위이나
+        # strong 1개, 실제 박스층 3254mm 는 strong 5개). 따라서 후보 피크들을 실제로 검출해 보고
+        # **SKU 사전에 부합하는 신뢰(strong) 박스 수**가 최대인 층을 고른다(동수면 카메라에 가까운 층).
+        # 기존 동작(strong==0 일 때만 재시도)은 엉뚱한 층이 그럴듯한 검출을 내면 재고하지 못했다.
+        evaluated = [(top_d, mask, top, boxes, geoms, strong)]
         for td in top_layer_candidates(D, valid, k=fallback_k)[1:]:
-            if abs(td - top_d) < tol_mm:
+            if any(abs(td - e[0]) < tol_mm for e in evaluated):
                 continue
             _, mask2, bx2 = _detect_boxes_at(sess, td, tol_mm=tol_mm, min_area_px=min_area_px)
             top2, _, boxes2, geoms2, strong2 = _annotate_layer(sess, td, bx2, tol_mm, conf_src)
             if verbose:
-                print("  layer fallback try %.0f -> boxes=%d strong=%d conf=%s" % (
-                    td, len(boxes2), len(strong2), [b["confidence"] for b in boxes2]))
+                print("  layer try %.0f -> boxes=%d strong=%d" % (td, len(boxes2), len(strong2)))
             if debug is not None:
                 debug.setdefault("fallback_tries", []).append((td, len(boxes2), len(strong2)))
-            if len(strong2) >= fallback_min_strong:
-                top_d, mask, top, boxes, geoms, strong = td, mask2, top2, boxes2, geoms2, strong2
-                layer_switched = True
+            evaluated.append((td, mask2, top2, boxes2, geoms2, strong2))
+        # 층 선택 규칙: 디팔레타이징에서 다음에 집을 층은 **카메라에 가장 가까운** 박스 층이다.
+        # 질량 최대 피크를 그대로 쓰면 평평한 바닥/데크가 ROI 를 지배할 때 바닥을 상면으로 잡고
+        # (셀 트윈에서 발견: 바닥 4184mm 질량 1위·strong 1개 vs 실제 박스층 3254mm·strong 5개),
+        # 반대로 strong 최다를 쓰면 상층이 몇 개 안 남았을 때 가득 찬 아래층을 골라 버린다.
+        # 따라서 'strong >= 2 인 층 중 최근접'을 우선하고, 없으면 'strong >= 1 중 최근접'으로 완화한다.
+        pick = None
+        for need in (2, max(int(fallback_min_strong), 1)):
+            ok = [e for e in evaluated if len(e[5]) >= need]
+            if ok:
+                pick = min(ok, key=lambda e: e[0])
                 break
+        if pick is not None and pick[0] != top_d:
+            top_d, mask, top, boxes, geoms, strong = pick
+            layer_switched = True
     for b in boxes:
         b["layer_fallback"] = layer_switched
 

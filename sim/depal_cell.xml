@@ -1,0 +1,187 @@
+<mujoco model="depal_cell">
+  <compiler angle="degree" autolimits="true"/>
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
+  <visual>
+    <headlight diffuse="0.5 0.5 0.5" ambient="0.35 0.35 0.35" specular="0.1 0.1 0.1"/>
+    <global offwidth="640" offheight="480"/>
+    <quality offsamples="4"/>
+  </visual>
+  <asset>
+    <texture name="grid" type="2d" builtin="checker" width="256" height="256"
+             rgb1="0.22 0.24 0.26" rgb2="0.28 0.30 0.32"/>
+    <material name="floor" texture="grid" texrepeat="8 8" reflectance="0.02"/>
+    <material name="deck" rgba="0.55 0.30 0.14 1" reflectance="0.02"/>
+    <material name="tier" rgba="0.30 0.32 0.36 1" reflectance="0.01"/>
+    <material name="steel" rgba="0.62 0.64 0.68 1" reflectance="0.05"/>
+    <material name="card0" rgba="0.484 0.305 0.184 1" reflectance="0.02"/>
+    <material name="card1" rgba="0.447 0.282 0.170 1" reflectance="0.02"/>
+    <material name="card2" rgba="0.424 0.267 0.161 1" reflectance="0.02"/>
+    <material name="card3" rgba="0.422 0.266 0.160 1" reflectance="0.02"/>
+    <material name="card4" rgba="0.501 0.316 0.191 1" reflectance="0.02"/>
+    <material name="card5" rgba="0.511 0.322 0.194 1" reflectance="0.02"/>
+    <material name="card6" rgba="0.481 0.303 0.183 1" reflectance="0.02"/>
+    <material name="card7" rgba="0.493 0.311 0.187 1" reflectance="0.02"/>
+    <material name="card8" rgba="0.474 0.299 0.180 1" reflectance="0.02"/>
+    <material name="card9" rgba="0.514 0.324 0.195 1" reflectance="0.02"/>
+    <material name="card10" rgba="0.502 0.316 0.191 1" reflectance="0.02"/>
+    <material name="card11" rgba="0.420 0.265 0.160 1" reflectance="0.02"/>
+    <material name="card12" rgba="0.506 0.319 0.192 1" reflectance="0.02"/>
+    <material name="card13" rgba="0.423 0.267 0.161 1" reflectance="0.02"/>
+    <material name="card14" rgba="0.493 0.311 0.187 1" reflectance="0.02"/>
+    <material name="card15" rgba="0.438 0.276 0.166 1" reflectance="0.02"/>
+    <material name="card16" rgba="0.506 0.319 0.192 1" reflectance="0.02"/>
+    <material name="card17" rgba="0.474 0.299 0.180 1" reflectance="0.02"/>
+    <material name="card18" rgba="0.450 0.283 0.171 1" reflectance="0.02"/>
+    <material name="card19" rgba="0.462 0.291 0.176 1" reflectance="0.02"/>
+    <material name="card20" rgba="0.423 0.266 0.161 1" reflectance="0.02"/>
+    <material name="card21" rgba="0.432 0.272 0.164 1" reflectance="0.02"/>
+    <material name="card22" rgba="0.487 0.307 0.185 1" reflectance="0.02"/>
+    <material name="card23" rgba="0.485 0.305 0.184 1" reflectance="0.02"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 4.0" dir="0 0 -1" diffuse="0.9 0.9 0.9" specular="0.15 0.15 0.15"/>
+    <light pos="1.2 1.0 3.4" dir="-0.3 -0.25 -1" diffuse="0.35 0.35 0.35"/>
+    <geom name="floor" type="plane" size="6 6 0.05" material="floor"/>
+    <camera name="tof" pos="0 0 4.1830" quat="1 0 0 0" fovy="49.8030"/>
+    <geom name="deck_src" type="box" pos="0 0 0.6230" size="0.55 0.55 0.0200" material="deck"/>
+    <geom name="lift_src" type="box" pos="0 0 0.3015" size="0.40 0.40 0.3015" material="steel"/>
+    <geom name="deck_dst" type="box" pos="-1.1914 0.0383 0.6230" size="0.55 0.55 0.0200" material="deck"/>
+    <geom name="lift_dst" type="box" pos="-1.1914 0.0383 0.3015" size="0.40 0.40 0.3015" material="steel"/>
+    <geom name="tier_src" type="box" pos="0 0 0.6450" size="0.52 0.40 0.002" material="tier"/>
+    <geom name="conv_l" type="box" pos="0 -1.05 0.35" size="1.6 0.22 0.35" material="steel"/>
+    <geom name="conv_r" type="box" pos="0 1.05 0.30" size="1.6 0.18 0.30" material="steel"/>
+    <body name="box0" pos="-0.44962 -0.22797 0.79000" euler="0 0 1.084">
+      <freejoint name="box0_j"/>
+      <geom name="box0_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card0" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box1" pos="-0.15183 -0.22412 0.79000" euler="0 0 -1.106">
+      <freejoint name="box1_j"/>
+      <geom name="box1_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card1" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box2" pos="0.14916 -0.22564 0.79000" euler="0 0 -1.212">
+      <freejoint name="box2_j"/>
+      <geom name="box2_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card2" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box3" pos="0.45086 -0.22358 0.79000" euler="0 0 0.649">
+      <freejoint name="box3_j"/>
+      <geom name="box3_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card3" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box4" pos="-0.45052 0.00314 0.79000" euler="0 0 -0.785">
+      <freejoint name="box4_j"/>
+      <geom name="box4_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card4" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box5" pos="-0.15504 0.00606 0.79000" euler="0 0 1.792">
+      <freejoint name="box5_j"/>
+      <geom name="box5_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card5" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box6" pos="0.15313 0.00106 0.79000" euler="0 0 1.615">
+      <freejoint name="box6_j"/>
+      <geom name="box6_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card6" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box7" pos="0.45583 0.00784 0.79000" euler="0 0 -0.377">
+      <freejoint name="box7_j"/>
+      <geom name="box7_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card7" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box8" pos="-0.44474 0.22643 0.79000" euler="0 0 2.162">
+      <freejoint name="box8_j"/>
+      <geom name="box8_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card8" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box9" pos="-0.15002 0.22763 0.79000" euler="0 0 -1.450">
+      <freejoint name="box9_j"/>
+      <geom name="box9_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card9" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box10" pos="0.15158 0.22672 0.79000" euler="0 0 -1.546">
+      <freejoint name="box10_j"/>
+      <geom name="box10_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card10" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box11" pos="0.44526 0.22235 0.79000" euler="0 0 0.835">
+      <freejoint name="box11_j"/>
+      <geom name="box11_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card11" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box12" pos="-0.45468 -0.21804 1.07300" euler="0 0 -0.524">
+      <freejoint name="box12_j"/>
+      <geom name="box12_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card12" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box13" pos="-0.14868 -0.22603 1.07300" euler="0 0 -0.595">
+      <freejoint name="box13_j"/>
+      <geom name="box13_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card13" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box14" pos="0.15528 -0.22247 1.07300" euler="0 0 1.900">
+      <freejoint name="box14_j"/>
+      <geom name="box14_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card14" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box15" pos="0.45021 -0.22227 1.07300" euler="0 0 -2.644">
+      <freejoint name="box15_j"/>
+      <geom name="box15_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card15" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box16" pos="-0.45247 0.00729 1.07300" euler="0 0 1.205">
+      <freejoint name="box16_j"/>
+      <geom name="box16_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card16" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box17" pos="-0.15265 0.00374 1.07300" euler="0 0 -1.585">
+      <freejoint name="box17_j"/>
+      <geom name="box17_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card17" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box18" pos="0.15801 0.00075 1.07300" euler="0 0 0.059">
+      <freejoint name="box18_j"/>
+      <geom name="box18_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card18" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box19" pos="0.44849 -0.00436 1.07300" euler="0 0 -0.760">
+      <freejoint name="box19_j"/>
+      <geom name="box19_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card19" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box20" pos="-0.44748 0.22732 1.07300" euler="0 0 -1.533">
+      <freejoint name="box20_j"/>
+      <geom name="box20_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card20" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box21" pos="-0.15302 0.23176 1.07300" euler="0 0 1.553">
+      <freejoint name="box21_j"/>
+      <geom name="box21_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card21" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box22" pos="0.15630 0.22327 1.07300" euler="0 0 -0.345">
+      <freejoint name="box22_j"/>
+      <geom name="box22_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card22" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="box23" pos="0.45100 0.22913 1.07300" euler="0 0 -0.883">
+      <freejoint name="box23_j"/>
+      <geom name="box23_g" type="box" size="0.1465 0.1095 0.1415" mass="6.0" material="card23" friction="0.9 0.02 0.001" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+    </body>
+    <body name="suction_target" pos="0 0 1.6430" quat="1 0 0 0" mocap="true">
+      <geom name="mocap_viz" type="box" size="0.06 0.06 0.012" rgba="0.1 0.7 0.9 0.25" contype="0" conaffinity="0"/>
+    </body>
+    <body name="suction" pos="0 0 1.6430">
+      <freejoint name="suction_j"/>
+      <geom name="suction_g" type="cylinder" size="0.055 0.015" mass="1.2" rgba="0.15 0.6 0.8 1"
+            contype="2" conaffinity="1" friction="1.2 0.02 0.001"/>
+    </body>
+  </worldbody>
+
+  <equality>
+    <weld name="ee_mocap" body1="suction" body2="suction_target" solref="0.01 1" solimp="0.95 0.99 0.001"/>
+    <weld name="grip0" body1="suction" body2="box0" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip1" body1="suction" body2="box1" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip2" body1="suction" body2="box2" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip3" body1="suction" body2="box3" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip4" body1="suction" body2="box4" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip5" body1="suction" body2="box5" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip6" body1="suction" body2="box6" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip7" body1="suction" body2="box7" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip8" body1="suction" body2="box8" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip9" body1="suction" body2="box9" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip10" body1="suction" body2="box10" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip11" body1="suction" body2="box11" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip12" body1="suction" body2="box12" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip13" body1="suction" body2="box13" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip14" body1="suction" body2="box14" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip15" body1="suction" body2="box15" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip16" body1="suction" body2="box16" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip17" body1="suction" body2="box17" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip18" body1="suction" body2="box18" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip19" body1="suction" body2="box19" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip20" body1="suction" body2="box20" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip21" body1="suction" body2="box21" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip22" body1="suction" body2="box22" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+    <weld name="grip23" body1="suction" body2="box23" active="false" solref="0.006 1" solimp="0.97 0.99 0.001"/>
+  </equality>
+</mujoco>

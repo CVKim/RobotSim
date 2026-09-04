@@ -185,6 +185,12 @@ def detect_boxes(frame: Frame, sku: Optional[Sequence[float]] = DEFAULT_SKU, tol
             continue
         comp = cv2.dilate((comp * 255).astype(np.uint8), kernel3, iterations=2) > 0
         comp &= (m8 > 0)
+        # m8 은 MORPH_CLOSE 로 무효 픽셀 구멍이 메워져 있어, 그 픽셀의 X/Y 센티넬(8191.75)이
+        # minAreaRect 에 섞이면 13m 짜리 사각형이 나와 종횡비 필터에서 정상 박스가 탈락한다.
+        # (셀 트윈에서 발견 — 실측 30프레임에서도 4개 박스가 이 경로로 누락되고 있었다.)
+        comp &= frame.valid
+        if comp.sum() < min_area_px:
+            continue
         ys, xs = np.nonzero(comp)
         pts_mm = np.stack([X[comp], Y[comp]], axis=-1).astype(np.float32)
         rect_mm = cv2.minAreaRect(pts_mm)

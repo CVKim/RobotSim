@@ -245,12 +245,19 @@ oracle 을 나란히 돌려 인식 때문에 잃는 성능을 분리했다. 10 �
 
 ![loop](assets/twin_closed_loop.png)
 
-새로 채운 배관 (`robotsim_perception/pose.py`):
+사이클 타임(물리 스텝 실측): oracle **11.7초/픽**(p95 13.7), 인식 구동 11.0초. 실측 셀 관측치 약 9초 대비
+보수적인데 이송 속도를 0.6 m/s 로 잡았기 때문이다. 인식 지연(v2 340 ms)은 사이클의 3% 로 병목이 아니다.
+
+새로 채운 배관 (`robotsim_perception/pose.py`, `runtime.py`):
 
 - `T_base_cam` 4×4 동차변환 + 로드/저장 — 그동안 모든 출력이 카메라 좌표 mm 라 로봇이 실행할 수 없었다
 - `PickPose` — 로봇 베이스 좌표의 위치 + 접근 벡터 + **요(yaw)** + pre-pick/post-pick 경유점
 - `suction_footprint_ok` — 컵 풋프린트 아래 유효 픽셀 비율·평탄도로 픽 가능 여부 판정 (박스 단위 지표로는
-  중심부에 결손이 있는 박스를 못 거른다). 폐루프에서 5회 거부로 실제 작동 확인
+  중심부에 결손이 있는 박스를 못 거른다). 폐루프에서 실제 거부 발생
+- **`runtime.decide()`** — 상위 제어기가 바로 분기할 상태: `OK / RETAKE / LOW_CONFIDENCE / LAYER_EMPTY / NO_SURFACE`.
+  "박스 0개"가 층이 빈 건지 프레임이 나쁜 건지 구분하지 못하면 셀은 멈추거나 잘못 진행한다.
+  실측 30프레임에서 박스 있는 25프레임 OK, 빈 5프레임 LAYER_EMPTY, 오탐 0. 임계는 JSON 설정으로 외부화
+- **`runtime.HealthMonitor`** — 정적 배경 깊이 편차로 카메라 드리프트 감시(WARN 8mm / FAIL 25mm)
 
 **트윈 하네스를 만들며 드러난 설계 누락 3건** (전부 실제 셀에서 필요한 것):
 

@@ -69,6 +69,7 @@ class Cell:
                 self.d.eq_active[k] = 0          # weld 는 쓰지 않는다 (아래 주석 참조)
         self.held = None
         self.hold_offset = None
+        self.steps = 0          # 물리 스텝 누적 -> 사이클 타임(초) = steps / CTRL_HZ
 
     def close(self):
         self.rend.close()
@@ -91,9 +92,11 @@ class Cell:
             a = t * t * (3 - 2 * t)           # smoothstep: 시작/끝 가속도 0
             self.d.mocap_pos[self.mocap_id] = start + (goal - start) * a
             self.mj.mj_step(self.m, self.d)
+            self.steps += 1
             self._carry()
         for _ in range(settle_steps):
             self.mj.mj_step(self.m, self.d)
+            self.steps += 1
             self._carry()
         return float(np.linalg.norm(self.d.xpos[self.suction_bid] - goal))
 
@@ -154,6 +157,7 @@ class Cell:
         self.m.geom_conaffinity[gid] = 0
         for _ in range(60):
             self.mj.mj_step(self.m, self.d)
+            self.steps += 1
             self._carry()
         return best, bd * 1000.0
 
@@ -168,6 +172,7 @@ class Cell:
         self.mj.mj_forward(self.m, self.d)
         for _ in range(600):
             self.mj.mj_step(self.m, self.d)
+            self.steps += 1
 
     def frame(self, rng):
         return self.rend.frame(self.d, noise="tof", rng=rng)
@@ -206,6 +211,7 @@ def run_episode(layout, seed, oracle=False, conf_min=0.0, use_footprint=True, ve
     stack_h = DECK_H
     try:
         for step in range(n_start):
+            step_start = cell.steps
             f = cell.frame(rng)
             if oracle:
                 gt = ground_truth(cell.m, cell.d)
@@ -258,6 +264,7 @@ def run_episode(layout, seed, oracle=False, conf_min=0.0, use_footprint=True, ve
                     print(f"    step {step}: 흡착 실패 (gap {gap:.0f}mm)")
                 continue
             before = cell.d.xpos[cell.box_bid(held)].copy()
+            t_pick0 = cell.steps
             cell.move_to(tgt + np.array([0, 0, 0.45]))
             # 목적지 배치: 실제 이적재 공정처럼 4x3 격자 슬롯에 층층이 쌓는다.
             # (모든 박스를 목적지 중심 한 점에 떨어뜨리면 서로 부딪혀 무너진다 — 1차 시도에서 발생)
@@ -276,6 +283,8 @@ def run_episode(layout, seed, oracle=False, conf_min=0.0, use_footprint=True, ve
             placed += int(moved)
             log["picks"].append({"step": step, "result": "placed" if moved else "misplaced",
                                  "box": held, "gap_mm": round(gap, 1),
+                                 "cycle_s": round((cell.steps - step_start) / CTRL_HZ, 2),
+                                 "transfer_s": round((cell.steps - t_pick0) / CTRL_HZ, 2),
                                  "place_err_mm": round(float(np.linalg.norm(after[:2] - drop[:2])) * 1000, 1),
                                  "landed_z": round(float(after[2]), 3),
                                  "travel_mm": round(float(np.linalg.norm(after - before)) * 1000, 1),
@@ -318,10 +327,16 @@ def main():
         for e in eps:
             for p in e["picks"]:
                 reasons[p["result"]] = reasons.get(p["result"], 0) + 1
+        cyc = [p["cycle_s"] for e in eps for p in e["picks"] if "cycle_s" in p]
         results[mode] = {"episodes": len(eps), "boxes": tot, "placed": ok,
                          "success_rate": round(ok / max(tot, 1), 3),
-                         "outcomes": reasons, "logs": eps}
-        print(f"  => {mode}: {ok}/{tot} = {results[mode]['success_rate']:.1%}  {reasons}")
+                         "outcomes": reasons, "logs": eps,
+                         "cycle_s": ({"mean": round(float(np.mean(cyc)), 2),
+                                      "p95": round(float(np.percentile(cyc, 95)), 2),
+                                      "n": len(cyc)} if cyc else None)}
+        c = results[mode]["cycle_s"]
+        print(f"  => {mode}: {ok}/{tot} = {results[mode]['success_rate']:.1%}  {reasons}"
+              + (f"  cycle {c['mean']:.1f}s (p95 {c['p95']:.1f})" if c else ""))
 
     gap = results["oracle"]["success_rate"] - results["perception"]["success_rate"]
     results["perception_cost"] = round(gap, 3)

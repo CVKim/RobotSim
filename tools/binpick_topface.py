@@ -490,8 +490,8 @@ def detect_boxes_v2(sess, tol_mm=40, min_area_px=700, conf_src=0.55, support_min
                     contra_max=0.08, occ_max=0.10, valid_min=0.15, in_image_min=0.90,
                     ring_w=0.0, bnd_w=1.0, bnd_min=-0.25, search_mm=36.0, search_step_mm=12.0, max_rounds=2,
                     dense_scan=True, replace_frac=0.3, layer_fallback=True, fallback_min_strong=1,
-                    fallback_k=8, layer_pitch_mm=283.0, conf_min=None, grid_res_mm=6.0,
-                    verbose=False, debug=None):
+                    fallback_k=8, layer_pitch_mm=283.0, stack_align_mm=70.0, probe_dims_tol=0.35,
+                    conf_min=None, grid_res_mm=6.0, verbose=False, debug=None):
     """detect_boxes 래핑: (1) 박스별 신뢰도 (2) 격자 기반 결손 셀 보완('inferred').
 
     반환 (top_d, mask, boxes). boxes 의 각 dict 는 v1 키(area_px, dims_mm, depth_mm, rect_px)에
@@ -547,14 +547,23 @@ def detect_boxes_v2(sess, tol_mm=40, min_area_px=700, conf_src=0.55, support_min
             top_d, mask, top, boxes, geoms, strong = pick
             layer_switched = True
 
-        # [시도했으나 되돌림] 박스 높이(283mm)만큼 위 층을 직접 검출해 SKU 치수에 맞는 박스가
-        # 있으면 올라가는 '상층 프로브'를 넣어 보았다. 트윈의 잔여 2개 케이스는 고쳐졌지만
-        # (FP 9 -> 0) 실측에서 364085 세션이 12 -> 3, 375446 이 4 -> 1 로 크게 퇴행했다.
-        # 상층 프로브가 실제 상면보다 위(설비 상단·노이즈 잔재)에서 SKU 치수에 우연히 맞는
-        # 조각을 찾아 올라가 버리기 때문이다. 순이득이 음수라 제거했다.
-        # 잔여 <=3개 실패 모드는 미해결로 남는다 (README 8절 참조).
-    for b in boxes:
-        b["layer_fallback"] = layer_switched
+        # [미해결] 희소한 최상층 회수 — 두 번 시도했고 둘 다 기각했다.
+        # 증상: 가득 찬 아래층 위에 박스가 1~3개만 남으면 그 층의 픽셀 질량이 아래층에 눌려
+        #       후보 피크에 들지 못하거나(잔여 1개) strong 판정을 못 받아(잔여 2~3개)
+        #       선택기가 아래층을 고른다. 폐루프 손실 40%p 의 지배 원인.
+        #
+        # 시도 1 — 박스 높이(283mm) 위 층을 검출해 SKU 치수에 맞는 박스가 있으면 올라감.
+        #   결과: 실측 167 -> 155 퇴행(364085: 12->3). 설비 상단에서 우연히 SKU 크기인
+        #         조각을 잡고 올라갔다. 기각.
+        # 시도 2 — 위 조건에 '적층 정합'(위층 박스 중심이 아래층 박스 중심과 XY 일치)을 추가.
+        #   결과: 원리적으로 성립 불가. **위층 박스는 바로 아래 박스를 가리므로 그 자리에
+        #         아래층 검출이 존재할 수 없다.** 정합 카운트가 항상 0. 기각.
+        #
+        # 다음 후보: 아래층 검출들로 격자(피치·방향)를 추정하고 상층 후보가 그 격자의
+        #   **노드**에 오는지 검사(가려진 박스가 아니라 격자에 맞춤). 단, 트윈에서 고립된
+        #   상층 박스는 에지 침식이 커서 W 가 219 -> 132mm 로 측정되므로, 치수 게이트를
+        #   쓸 수 없고 격자 정합만으로 판별해야 한다. 이 침식 폭이 실측(평균 -15mm)보다
+        #   훨씬 크므로 트윈 강도 모델의 과장 여부부터 확인할 것.
 
     def _finish(bxs):
         if conf_min is not None:

@@ -81,13 +81,20 @@ def main():
     ap.add_argument("--steps", type=int, default=1_500_000)
     ap.add_argument("--device", default="cuda:1")
     ap.add_argument("--out", default=r"E:\Robot_Sim\runs\palletize_ppo")
+    ap.add_argument("--seed", type=int, default=0, help="학습 시드 (모델 초기화 + 환경 스트림)")
+    ap.add_argument("--no-mask", action="store_true",
+                    help="ablation: action mask 없이 학습 (무효 배치를 정책이 고를 수 있음)")
     args = ap.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
-    env = Monitor(PalletizeGym(seed=1000), filename=str(out / "monitor.csv"))
+    # 시드 고정: 기존 런은 시드를 주지 않아 학습 재현이 보장되지 않았고 런 간 분산도 알 수 없었다.
+    env = Monitor(PalletizeGym(seed=1000 + 100 * args.seed), filename=str(out / "monitor.csv"))
+    if args.no_mask:
+        # ablation: 마스크를 전부 True 로 → 정책이 무효 배치도 선택 가능 (환경이 거절)
+        env.env.action_masks = lambda: np.ones(GRID * GRID * 2, dtype=bool)
     model = MaskablePPO(
-        "MlpPolicy", env, device=args.device, verbose=1,
+        "MlpPolicy", env, device=args.device, verbose=0, seed=args.seed,
         n_steps=2048, batch_size=512, learning_rate=3e-4, ent_coef=0.01,
         policy_kwargs=dict(net_arch=[512, 256]),
     )
@@ -96,8 +103,9 @@ def main():
     model.save(str(out / "final"))
 
     res = evaluate(model)
+    res.update({"seed": args.seed, "steps": args.steps, "action_mask": not args.no_mask})
     (out / "eval.json").write_text(json.dumps(res, indent=1), encoding="utf-8")
-    print(res)
+    print(json.dumps(res))
 
 
 if __name__ == "__main__":

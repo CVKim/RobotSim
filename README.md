@@ -19,6 +19,7 @@
 | [docs/02_환경_셋업.md](docs/02_환경_셋업.md) | Windows/WSL2/Isaac Sim 4.5 설치 절차 |
 | [docs/03_공개전략_및_데이터보안.md](docs/03_공개전략_및_데이터보안.md) | ⚠️ 공장 데이터 취급 원칙 + 공개 채널 전략 |
 | [docs/40_패키지_사용법.md](docs/40_패키지_사용법.md) | `robotsim_perception` 패키지 — CLI·API·JSON 스키마·테스트·알려진 한계 |
+| [docs/41_셀_트윈.md](docs/41_셀_트윈.md) | 셀 디지털 트윈 — 구성·트윈이 찾은 결함·**검증하지 않는 것**·미해결 |
 | [results/](results/) | **README 수치의 원본 JSON** (익명화된 집계 결과 12종) |
 | [docs/research/](docs/research/) | 8개 도메인 리서치 원본 + 검증 리포트 (출처 링크 포함) |
 

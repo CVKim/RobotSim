@@ -537,8 +537,12 @@ def detect_boxes_v2(sess, tol_mm=40, min_area_px=700, conf_src=0.55, support_min
         # (셀 트윈에서 발견: 바닥 4184mm 질량 1위·strong 1개 vs 실제 박스층 3254mm·strong 5개),
         # 반대로 strong 최다를 쓰면 상층이 몇 개 안 남았을 때 가득 찬 아래층을 골라 버린다.
         # 따라서 'strong >= 2 인 층 중 최근접'을 우선하고, 없으면 'strong >= 1 중 최근접'으로 완화한다.
+        # 임계: '가장 가까운 층 중 신뢰 박스가 있는 층'. 상층에 박스가 1~3개만 남으면
+        # strong 이 1개까지 떨어지므로 임계 2 로는 가득 찬 아래층에 밀린다(트윈에서 확인:
+        # 상층 2973mm strong 1 vs 하층 3253mm strong 4 -> 하층 선택, GT 대비 FP 6).
+        # 임계 1 이 안전해진 이유: 설비 높이를 실측대로 제한하자 바닥층의 허위 strong 이 사라졌다.
         pick = None
-        for need in (2, max(int(fallback_min_strong), 1)):
+        for need in (max(int(fallback_min_strong), 1),):
             ok = [e for e in evaluated if len(e[5]) >= need]
             if ok:
                 pick = min(ok, key=lambda e: e[0])

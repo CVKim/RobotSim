@@ -109,7 +109,10 @@ def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
         for (ex, ey) in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
             for _t in range(3):
                 hxx, hyy = float(rng.uniform(0.10, 0.30)), float(rng.uniform(0.10, 0.30))
-                hzz = float(rng.uniform(0.12, 0.62))
+                # 높이 상한 주의: 반높이 0.62 까지 허용하면 설비 상단이 1.24 m -> 깊이 2.94 m 로
+                # 박스 상면층(2.97 m)과 겹쳐, 최상층 검출이 설비 표면과 경쟁하게 된다.
+                # 실측 셀의 주변 설비는 그 높이에 없다. 데크 위 박스 1층 상면(0.926 m) 아래로 제한한다.
+                hzz = float(rng.uniform(0.10, 0.44))
                 px = ex * float(rng.uniform(0.75, 1.75)) + float(rng.normal(0, 0.10))
                 py = ey * float(rng.uniform(0.70, 1.60)) + float(rng.normal(0, 0.10))
                 # 소스 팔레트와 목적지 팔레트 위에는 설비를 두지 않는다.

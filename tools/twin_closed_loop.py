@@ -174,14 +174,24 @@ class Cell:
 
 
 def pick_order(boxes, dest_xy_mm, col_tol=80.0):
-    """열 스캔 규칙(실제 픽 순서와 81% 일치)으로 다음 픽 대상 1개 선택."""
+    """열 스캔 규칙(실제 픽 순서와 81% 일치)으로 픽 후보를 우선순위 순으로 나열.
+
+    1순위는 기존과 동일(목적지 최근접 열에서 가장 먼 박스). 그 뒤로는 같은 규칙을
+    남은 박스에 반복 적용한다. 풋프린트 게이트에 걸리면 다음 후보로 넘어가기 위함 —
+    한 후보가 거부됐다고 사이클을 통째로 버리면 실제 셀에서는 처리량 손실이 된다.
+    """
     if not boxes:
-        return None
+        return []
     c = np.array([b["center_mm"][:2] for b in boxes], float)
     dist = np.hypot(c[:, 0] - dest_xy_mm[0], c[:, 1] - dest_xy_mm[1])
-    p = int(np.argmin(dist))
-    col = [i for i in range(len(boxes)) if abs(c[i, 0] - c[p, 0]) < col_tol]
-    return max(col, key=lambda i: dist[i])
+    remaining, order = list(range(len(boxes))), []
+    while remaining:
+        p = min(remaining, key=lambda i: dist[i])
+        col = [i for i in remaining if abs(c[i, 0] - c[p, 0]) < col_tol]
+        nxt = max(col, key=lambda i: dist[i])
+        order.append(nxt)
+        remaining.remove(nxt)
+    return order
 
 
 def run_episode(layout, seed, oracle=False, conf_min=0.0, use_footprint=True, verbose=False):
@@ -217,17 +227,24 @@ def run_episode(layout, seed, oracle=False, conf_min=0.0, use_footprint=True, ve
             if not boxes:
                 log["picks"].append({"step": step, "result": "source_empty"})
                 break
-            i = pick_order(boxes, dest_cam_xy)
-            b = boxes[i]
-            fp = {"ok": True, "reason": "skipped"}
-            if use_footprint and not oracle and b.get("rect_px") is not None:
-                fr = {"D": f["D"], "valid": f["D"] < 16000}
-                fp = suction_footprint_ok(fr, b)
-                if not fp["ok"]:
-                    log["picks"].append({"step": step, "result": "rejected_footprint", **fp})
-                    if verbose:
-                        print(f"    step {step}: 풋프린트 거부 ({fp['reason']})")
-                    continue
+            order = pick_order(boxes, dest_cam_xy)
+            b, n_rej = None, 0
+            for i in order:
+                cand = boxes[i]
+                if use_footprint and not oracle and cand.get("rect_px") is not None:
+                    fr = {"D": f["D"], "valid": f["D"] < 16000}
+                    fp = suction_footprint_ok(fr, cand)
+                    if not fp["ok"]:
+                        n_rej += 1
+                        if verbose:
+                            print(f"    step {step}: 후보 거부 ({fp['reason']}) -> 다음 후보")
+                        continue
+                b = cand
+                break
+            if b is None:
+                log["picks"].append({"step": step, "result": "rejected_footprint",
+                                     "candidates_rejected": n_rej})
+                continue
             pose = box_to_pick_pose(b, T, clearance_mm=180.0)
             tgt = cam_to_world(np.array(b["center_mm"], float))
             cell.move_to(tgt + np.array([0, 0, 0.20]))

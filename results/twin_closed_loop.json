@@ -2,13 +2,13 @@
  "perception": {
   "episodes": 10,
   "boxes": 60,
-  "placed": 34,
-  "success_rate": 0.567,
+  "placed": 28,
+  "success_rate": 0.467,
   "outcomes": {
-   "placed": 34,
-   "grasp_miss": 2,
+   "placed": 28,
+   "grasp_miss": 5,
    "source_empty": 6,
-   "rejected_footprint": 5
+   "rejected_footprint": 3
   },
   "logs": [
    {
@@ -42,36 +42,14 @@
      },
      {
       "step": 3,
-      "result": "placed",
-      "box": 1,
-      "gap_mm": 16.6,
-      "place_err_mm": 4.6,
-      "landed_z": 0.784,
-      "travel_mm": 1479.2,
-      "yaw_deg": 0.0,
-      "conf": 0.806
-     },
-     {
-      "step": 4,
-      "result": "placed",
-      "box": 3,
-      "gap_mm": 16.1,
-      "place_err_mm": 2.5,
-      "landed_z": 0.784,
-      "travel_mm": 620.1,
-      "yaw_deg": 0.0,
-      "conf": 0.777
-     },
-     {
-      "step": 5,
       "result": "source_empty"
      }
     ],
     "seed": 500,
     "oracle": false,
     "n_boxes": 6,
-    "placed": 4,
-    "success_rate": 0.667
+    "placed": 2,
+    "success_rate": 0.333
    },
    {
     "picks": [
@@ -99,11 +77,14 @@
      },
      {
       "step": 2,
-      "result": "rejected_footprint",
-      "ok": false,
-      "valid_frac": 0.879,
-      "plane_rms_mm": 134.89,
-      "reason": "surface too rough"
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 16.7,
+      "place_err_mm": 8.3,
+      "landed_z": 0.784,
+      "travel_mm": 1252.4,
+      "yaw_deg": 175.9,
+      "conf": 0.807
      },
      {
       "step": 3,
@@ -113,8 +94,8 @@
     "seed": 501,
     "oracle": false,
     "n_boxes": 6,
-    "placed": 2,
-    "success_rate": 0.333
+    "placed": 3,
+    "success_rate": 0.5
    },
    {
     "picks": [
@@ -155,23 +136,35 @@
       "step": 3,
       "result": "placed",
       "box": 1,
-      "gap_mm": 17.6,
-      "place_err_mm": 37.7,
+      "gap_mm": 18.0,
+      "place_err_mm": 33.2,
       "landed_z": 0.784,
-      "travel_mm": 876.8,
+      "travel_mm": 881.7,
       "yaw_deg": 0.0,
-      "conf": 0.748
+      "conf": 0.741
      },
      {
       "step": 4,
-      "result": "source_empty"
+      "result": "grasp_miss",
+      "gap_mm": -1.0
+     },
+     {
+      "step": 5,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 17.5,
+      "place_err_mm": 7.1,
+      "landed_z": 0.784,
+      "travel_mm": 2108.3,
+      "yaw_deg": 0.0,
+      "conf": 0.824
      }
     ],
     "seed": 502,
     "oracle": false,
     "n_boxes": 6,
-    "placed": 4,
-    "success_rate": 0.667
+    "placed": 5,
+    "success_rate": 0.833
    },
    {
     "picks": [
@@ -219,7 +212,7 @@
       "landed_z": 0.784,
       "travel_mm": 1196.2,
       "yaw_deg": 0.9,
-      "conf": 0.84
+      "conf": 0.843
      },
      {
       "step": 1,
@@ -230,11 +223,11 @@
       "step": 2,
       "result": "placed",
       "box": 3,
-      "gap_mm": 17.0,
-      "place_err_mm": 6.1,
+      "gap_mm": 16.2,
+      "place_err_mm": 3.3,
       "landed_z": 0.784,
-      "travel_mm": 985.7,
-      "yaw_deg": 2.0,
+      "travel_mm": 980.3,
+      "yaw_deg": 2.4,
       "conf": 0.807
      },
      {
@@ -292,11 +285,14 @@
      },
      {
       "step": 1,
-      "result": "rejected_footprint",
-      "ok": false,
-      "valid_frac": 0.799,
-      "plane_rms_mm": 29.78,
-      "reason": "surface too rough"
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 16.1,
+      "place_err_mm": 1.9,
+      "landed_z": 0.784,
+      "travel_mm": 1831.6,
+      "yaw_deg": 0.0,
+      "conf": 0.831
      },
      {
       "step": 2,
@@ -305,49 +301,37 @@
       "gap_mm": 17.4,
       "place_err_mm": 6.8,
       "landed_z": 0.784,
-      "travel_mm": 1194.1,
+      "travel_mm": 894.4,
       "yaw_deg": 177.9,
       "conf": 0.807
      },
      {
       "step": 3,
-      "result": "placed",
-      "box": 3,
-      "gap_mm": 16.2,
-      "place_err_mm": 2.3,
-      "landed_z": 0.784,
-      "travel_mm": 912.7,
-      "yaw_deg": 0.0,
-      "conf": 0.778
+      "result": "grasp_miss",
+      "gap_mm": -1.0
      },
      {
       "step": 4,
       "result": "placed",
-      "box": 1,
-      "gap_mm": 16.6,
-      "place_err_mm": 4.1,
+      "box": 3,
+      "gap_mm": 16.0,
+      "place_err_mm": 0.2,
       "landed_z": 0.784,
-      "travel_mm": 890.2,
-      "yaw_deg": 176.2,
-      "conf": 0.834
+      "travel_mm": 628.4,
+      "yaw_deg": 0.0,
+      "conf": 0.838
      },
      {
       "step": 5,
-      "result": "placed",
-      "box": 2,
-      "gap_mm": 17.1,
-      "place_err_mm": 6.1,
-      "landed_z": 0.784,
-      "travel_mm": 2111.0,
-      "yaw_deg": 3.7,
-      "conf": 0.849
+      "result": "grasp_miss",
+      "gap_mm": -1.0
      }
     ],
     "seed": 505,
     "oracle": false,
     "n_boxes": 6,
-    "placed": 5,
-    "success_rate": 0.833
+    "placed": 4,
+    "success_rate": 0.667
    },
    {
     "picks": [
@@ -360,7 +344,7 @@
       "landed_z": 0.784,
       "travel_mm": 1838.3,
       "yaw_deg": 90.0,
-      "conf": 0.73
+      "conf": 0.734
      },
      {
       "step": 1,
@@ -379,71 +363,23 @@
       "step": 0,
       "result": "placed",
       "box": 1,
-      "gap_mm": 18.5,
-      "place_err_mm": 9.5,
+      "gap_mm": 17.5,
+      "place_err_mm": 7.5,
       "landed_z": 0.784,
-      "travel_mm": 1209.0,
+      "travel_mm": 1209.1,
       "yaw_deg": 0.0,
-      "conf": 0.792
+      "conf": 0.786
      },
      {
       "step": 1,
-      "result": "placed",
-      "box": 4,
-      "gap_mm": 16.5,
-      "place_err_mm": 9.2,
-      "landed_z": 0.784,
-      "travel_mm": 1260.8,
-      "yaw_deg": 169.2,
-      "conf": 0.766
-     },
-     {
-      "step": 2,
-      "result": "placed",
-      "box": 0,
-      "gap_mm": 18.0,
-      "place_err_mm": 52.0,
-      "landed_z": 0.784,
-      "travel_mm": 834.9,
-      "yaw_deg": 5.4,
-      "conf": 0.86
-     },
-     {
-      "step": 3,
-      "result": "placed",
-      "box": 2,
-      "gap_mm": 17.2,
-      "place_err_mm": 111.2,
-      "landed_z": 0.787,
-      "travel_mm": 530.2,
-      "yaw_deg": 2.6,
-      "conf": 0.784
-     },
-     {
-      "step": 4,
-      "result": "rejected_footprint",
-      "ok": false,
-      "valid_frac": 0.383,
-      "plane_rms_mm": 111.6,
-      "reason": "low valid pixels under cup"
-     },
-     {
-      "step": 5,
-      "result": "placed",
-      "box": 5,
-      "gap_mm": 16.8,
-      "place_err_mm": 66.0,
-      "landed_z": 0.784,
-      "travel_mm": 1842.2,
-      "yaw_deg": 177.5,
-      "conf": 0.779
+      "result": "source_empty"
      }
     ],
     "seed": 507,
     "oracle": false,
     "n_boxes": 6,
-    "placed": 5,
-    "success_rate": 0.833
+    "placed": 1,
+    "success_rate": 0.167
    },
    {
     "picks": [
@@ -471,72 +407,60 @@
      },
      {
       "step": 2,
-      "result": "rejected_footprint",
-      "ok": false,
-      "valid_frac": 0.906,
-      "plane_rms_mm": 13.23,
-      "reason": "surface too rough"
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 17.8,
+      "place_err_mm": 18.4,
+      "landed_z": 0.784,
+      "travel_mm": 1490.2,
+      "yaw_deg": 0.0,
+      "conf": 0.744
      },
      {
       "step": 3,
       "result": "rejected_footprint",
-      "ok": false,
-      "valid_frac": 0.879,
-      "plane_rms_mm": 13.59,
-      "reason": "surface too rough"
+      "candidates_rejected": 1
      },
      {
       "step": 4,
-      "result": "placed",
-      "box": 1,
-      "gap_mm": 16.9,
-      "place_err_mm": 5.9,
-      "landed_z": 0.784,
-      "travel_mm": 908.2,
-      "yaw_deg": 0.0,
-      "conf": 0.57
+      "result": "rejected_footprint",
+      "candidates_rejected": 1
      },
      {
       "step": 5,
-      "result": "placed",
-      "box": 4,
-      "gap_mm": 17.8,
-      "place_err_mm": 7.9,
-      "landed_z": 0.784,
-      "travel_mm": 716.3,
-      "yaw_deg": 2.8,
-      "conf": 0.658
+      "result": "rejected_footprint",
+      "candidates_rejected": 1
      }
     ],
     "seed": 508,
     "oracle": false,
     "n_boxes": 6,
-    "placed": 4,
-    "success_rate": 0.667
+    "placed": 3,
+    "success_rate": 0.5
    },
    {
     "picks": [
      {
       "step": 0,
       "result": "placed",
-      "box": 1,
-      "gap_mm": 16.2,
-      "place_err_mm": 2.4,
+      "box": 3,
+      "gap_mm": 18.1,
+      "place_err_mm": 8.7,
       "landed_z": 0.784,
-      "travel_mm": 1265.5,
-      "yaw_deg": 163.8,
-      "conf": 0.839
+      "travel_mm": 1266.7,
+      "yaw_deg": 177.6,
+      "conf": 0.818
      },
      {
       "step": 1,
       "result": "placed",
-      "box": 3,
-      "gap_mm": 17.3,
-      "place_err_mm": 32.1,
+      "box": 0,
+      "gap_mm": 16.3,
+      "place_err_mm": 3.0,
       "landed_z": 0.784,
-      "travel_mm": 948.8,
+      "travel_mm": 1797.9,
       "yaw_deg": 0.0,
-      "conf": 0.799
+      "conf": 0.883
      },
      {
       "step": 2,
@@ -554,12 +478,10 @@
  "oracle": {
   "episodes": 10,
   "boxes": 60,
-  "placed": 58,
-  "success_rate": 0.967,
+  "placed": 60,
+  "success_rate": 1.0,
   "outcomes": {
-   "placed": 58,
-   "misplaced": 1,
-   "source_empty": 1
+   "placed": 60
   },
   "logs": [
    {
@@ -1096,8 +1018,8 @@
       "gap_mm": 15.9,
       "place_err_mm": 0.0,
       "landed_z": 0.784,
-      "travel_mm": 1199.6,
-      "yaw_deg": 1.7,
+      "travel_mm": 1202.0,
+      "yaw_deg": 1.2,
       "conf": 1.0
      },
      {
@@ -1107,52 +1029,52 @@
       "gap_mm": 15.9,
       "place_err_mm": 0.0,
       "landed_z": 0.784,
-      "travel_mm": 1184.5,
-      "yaw_deg": 5.2,
+      "travel_mm": 1189.9,
+      "yaw_deg": 2.1,
       "conf": 1.0
      },
      {
       "step": 2,
       "result": "placed",
-      "box": 4,
+      "box": 2,
       "gap_mm": 15.9,
-      "place_err_mm": 52.8,
+      "place_err_mm": 0.0,
       "landed_z": 0.784,
-      "travel_mm": 947.5,
-      "yaw_deg": 168.0,
+      "travel_mm": 912.6,
+      "yaw_deg": 0.6,
       "conf": 1.0
      },
      {
       "step": 3,
       "result": "placed",
-      "box": 2,
+      "box": 4,
       "gap_mm": 15.9,
-      "place_err_mm": 103.4,
-      "landed_z": 0.787,
-      "travel_mm": 514.8,
-      "yaw_deg": 2.5,
+      "place_err_mm": 0.0,
+      "landed_z": 0.784,
+      "travel_mm": 984.6,
+      "yaw_deg": 179.0,
       "conf": 1.0
      },
      {
       "step": 4,
       "result": "placed",
-      "box": 5,
+      "box": 3,
       "gap_mm": 15.9,
       "place_err_mm": 0.0,
       "landed_z": 0.784,
-      "travel_mm": 1839.7,
-      "yaw_deg": 178.2,
+      "travel_mm": 1791.7,
+      "yaw_deg": 1.6,
       "conf": 1.0
      },
      {
       "step": 5,
       "result": "placed",
-      "box": 3,
+      "box": 5,
       "gap_mm": 15.9,
-      "place_err_mm": 62.2,
+      "place_err_mm": 0.0,
       "landed_z": 0.784,
-      "travel_mm": 1500.7,
-      "yaw_deg": 1.6,
+      "travel_mm": 1803.3,
+      "yaw_deg": 0.2,
       "conf": 1.0
      }
     ],
@@ -1242,45 +1164,45 @@
      {
       "step": 0,
       "result": "placed",
-      "box": 1,
+      "box": 3,
       "gap_mm": 15.9,
       "place_err_mm": 0.0,
       "landed_z": 0.784,
-      "travel_mm": 1267.8,
-      "yaw_deg": 164.2,
+      "travel_mm": 1258.6,
+      "yaw_deg": 177.7,
       "conf": 1.0
      },
      {
       "step": 1,
       "result": "placed",
-      "box": 3,
+      "box": 4,
       "gap_mm": 15.9,
-      "place_err_mm": 33.5,
+      "place_err_mm": 0.0,
       "landed_z": 0.784,
-      "travel_mm": 948.7,
-      "yaw_deg": 177.8,
+      "travel_mm": 1255.2,
+      "yaw_deg": 179.8,
       "conf": 1.0
      },
      {
       "step": 2,
       "result": "placed",
-      "box": 4,
+      "box": 1,
       "gap_mm": 15.9,
-      "place_err_mm": 70.5,
+      "place_err_mm": 0.0,
       "landed_z": 0.784,
-      "travel_mm": 910.3,
-      "yaw_deg": 177.2,
+      "travel_mm": 916.9,
+      "yaw_deg": 178.9,
       "conf": 1.0
      },
      {
       "step": 3,
-      "result": "misplaced",
-      "box": 2,
+      "result": "placed",
+      "box": 0,
       "gap_mm": 15.9,
-      "place_err_mm": 901.2,
-      "landed_z": 0.756,
-      "travel_mm": 126.3,
-      "yaw_deg": 170.5,
+      "place_err_mm": 0.0,
+      "landed_z": 0.784,
+      "travel_mm": 1199.0,
+      "yaw_deg": 179.9,
       "conf": 1.0
      },
      {
@@ -1288,24 +1210,31 @@
       "result": "placed",
       "box": 5,
       "gap_mm": 15.9,
-      "place_err_mm": 0.1,
+      "place_err_mm": 2.3,
       "landed_z": 0.784,
-      "travel_mm": 1203.6,
-      "yaw_deg": 10.8,
+      "travel_mm": 2101.8,
+      "yaw_deg": 0.4,
       "conf": 1.0
      },
      {
       "step": 5,
-      "result": "source_empty"
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 15.9,
+      "place_err_mm": 0.0,
+      "landed_z": 0.784,
+      "travel_mm": 1793.3,
+      "yaw_deg": 0.1,
+      "conf": 1.0
      }
     ],
     "seed": 509,
     "oracle": true,
     "n_boxes": 6,
-    "placed": 4,
-    "success_rate": 0.667
+    "placed": 6,
+    "success_rate": 1.0
    }
   ]
  },
- "perception_cost": 0.4
+ "perception_cost": 0.533
 }

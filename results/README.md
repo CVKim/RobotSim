@@ -20,3 +20,4 @@ README 의 수치를 검증할 수 있도록 실험 산출 JSON 을 모아 둔 �
 | [tof_noise_model.json](tof_noise_model.json) | ToF 시간 노이즈 실측 모델 |
 | [palletize_rl.json](palletize_rl.json) | 팔레타이징 MaskablePPO vs DBL 휴리스틱 |
 | [imitation_bc.json](imitation_bc.json) | 모방학습 BC/DART (가상 Franka) |
+| [palletize_multiseed.json](palletize_multiseed.json) | 팔레타이징 RL 다중 시드 + action mask ablation (시드 3개씩) |

@@ -20,7 +20,7 @@
 | [docs/03_공개전략_및_데이터보안.md](docs/03_공개전략_및_데이터보안.md) | ⚠️ 공장 데이터 취급 원칙 + 공개 채널 전략 |
 | [docs/40_패키지_사용법.md](docs/40_패키지_사용법.md) | `robotsim_perception` 패키지 — CLI·API·JSON 스키마·테스트·알려진 한계 |
 | [docs/41_셀_트윈.md](docs/41_셀_트윈.md) | 셀 디지털 트윈 — 구성·트윈이 찾은 결함·**검증하지 않는 것**·미해결 |
-| [results/](results/) | **README 수치의 원본 JSON** (익명화된 집계 결과 12종) |
+| [results/](results/) | **README 수치의 원본 JSON** (익명화된 집계 결과 13종) |
 | [docs/research/](docs/research/) | 8개 도메인 리서치 원본 + 검증 리포트 (출처 링크 포함) |
 
 ## 프로젝트 구성
@@ -29,7 +29,7 @@
 |---|---|---|
 | **3D 인식** | ToF 단독 박스 검출(v1 152 → v2 **167/167**, RGB 대조 검증)·mm 치수·픽포인트·픽 순서 복원 · 순수 numpy/opencv 패키지에 v2 이식 완료(pytest 28, 전 세션 파리티) | ✅ 완료 |
 | **센서 모델링** | ToF 노이즈 실측 모델 σ(I) — 합성데이터 캘리브레이션 근거 | ✅ 완료 |
-| **강화학습** | 실측 치수 기반 팔레타이징 환경 구축 + MaskablePPO (휴리스틱 +14.7%) | ✅ 완료 |
+| **강화학습** | 실측 치수 기반 팔레타이징 환경 + MaskablePPO — 3시드 64.7±0.3박스(휴리스틱 +14.3%), action mask ablation −21.5박스 | ✅ 완료 |
 | **인식-정책 통합** | 셀 트윈 폐루프(인식→6-DoF 포즈→석션 픽/플레이스) + 런타임 판정 계층·드리프트 감시 | ✅ 완료 |
 | **합성데이터·sim2real** | 합성 전용 0.00 → 센서특성 시뮬 0.43 → +실측 6장 0.99 · Isaac Replicator 0.56 vs BlenderProc 0.43 | ✅ 완료 |
 | **학습 세그멘테이션** | YOLO11n-seg(합성 BP+Isaac + 실측 6장) 실측 홀드아웃 mAP50 0.99, GPU 22 ms — 무효 픽셀 15% 이상에서 붕괴하는 한계 실측 | ✅ 완료 |
@@ -42,7 +42,7 @@
 
 | 요구 역량 | 이 프로젝트의 증거 | 상세 |
 |---|---|---|
-| 강화학습 환경 구축 | 실측 치수 시드 팔레타이징 환경 직접 설계(높이맵 + 지지율 제약 + action mask, **물리엔진 아님**) → PPO가 휴리스틱 +14.7% | [tools/palletize_env.py](tools/palletize_env.py) |
+| 강화학습 환경 구축 | 실측 치수 시드 팔레타이징 환경 직접 설계(높이맵 + 지지율 제약 + action mask, **물리엔진 아님**) → 3시드 평균 휴리스틱 +14.3%, ablation 으로 마스크 기여 분리 | [tools/palletize_env.py](tools/palletize_env.py) |
 | 물리엔진 시뮬레이션 | BlenderProc·Isaac Sim 물리 드롭으로 합성데이터 생성, MuJoCo Franka 모방학습 — **적재 안정성 물리 검증은 미구현** | [tools/sdg_boxdrop.py](tools/sdg_boxdrop.py) |
 | 로봇 비전 무교시(teaching-less) | 라벨 0장으로 픽포인트(중심+법선) 자동 생성, 기울기 0.95° | [tools/binpick_pickpoints.py](tools/binpick_pickpoints.py) |
 | 3D 포인트클라우드 정합 | 대차 데크 ICP 로 대차 실이동(21~52 mm) 제거 → 후크 위치 반복성 3.2 mm (전체 장면 ICP 17.6 mm 의 오류 원인 규명) | [tools/hook_analysis_v2.py](tools/hook_analysis_v2.py) |
@@ -108,9 +108,23 @@
 
 1100×1100mm(T-11) heightmap 환경, 지지율 제약 + action mask 내장 (`tools/palletize_env.py`):
 
-- DBL 휴리스틱 베이스라인: **56.6±4.1박스, 활용률 59.8%** (max 120박스, 100 에피소드)
-- **MaskablePPO (1.5M 스텝): 64.9박스, 활용률 68.5%±0.6%** — 동일 시드 100 에피소드 공정 평가에서 **휴리스틱 대비 +14.7% 박스, +8.7%p 활용률, 분산 대폭 감소**
+**시드 3개 × (action mask 유/무)** 로 재실행 (각 500k 스텝, 동일 시드 100 에피소드 평가):
 
+| 구성 | 박스 수 (평균 ± sd, n=3) | 활용률 |
+|---|---|---|
+| DBL 휴리스틱 | 56.6 ± 4.1 | 59.8% |
+| **MaskablePPO (action mask)** | **64.7 ± 0.3** | **68.2 ± 0.3%** |
+| PPO (mask 제거 ablation) | 43.2 ± 3.6 | 45.6 ± 3.8% |
+
+- 휴리스틱 대비 **+14.3% 박스**, 런 간 분산은 1/13 (±4.1 → ±0.3)
+- **action mask 를 빼면 43.2박스로 휴리스틱보다도 못하다 (−21.5박스).** 부가 최적화가 아니라
+  이 환경에서 RL 이 성립하는 조건이다
+- 같은 500k 스텝에서 에피소드 길이가 49 vs **3080 스텝** — 마스크가 없으면 정책이 무효 배치를
+  반복하느라 스텝의 대부분을 낭비한다 (에피소드 수 30288 vs 487)
+- 기존 단일 런(1.5M 스텝, 64.9박스)과 500k 3시드 평균(64.7)이 일치 — 곡선이 500k 에서 플래토라는
+  기존 관찰과 맞고, 단일 런 수치가 대표성이 있었음을 사후 확인
+
+![multiseed](assets/palletize_multiseed.png)
 ![learning curve](assets/learning_curve_final.png)
 
 같은 시드(68)에서의 최종 적재 비교 — PPO 65박스 vs DBL 56박스:

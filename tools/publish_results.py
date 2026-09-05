@@ -40,6 +40,8 @@ SOURCES = [
     ("explore/noise/noise_stats.json", "tof_noise_model.json", "ToF 시간 노이즈 실측 모델"),
     ("runs/palletize_ppo/eval.json", "palletize_rl.json", "팔레타이징 MaskablePPO vs DBL 휴리스틱"),
     ("runs/hil_bc/results.json", "imitation_bc.json", "모방학습 BC/DART (가상 Franka)"),
+    ("results/palletize_multiseed.json", "palletize_multiseed.json",
+     "팔레타이징 RL 다중 시드 + action mask ablation (시드 3개씩)"),
 ]
 
 SESSION_RE = re.compile(r"\b1260\d{11}\b")

@@ -1,0 +1,57 @@
+{
+ "baseline_dbl": {
+  "boxes_mean": 56.6,
+  "boxes_std": 4.1,
+  "utilization_mean": 0.598
+ },
+ "variants": {
+  "mask": {
+   "label": "MaskablePPO (action mask)",
+   "boxes": {
+    "mean": 64.717,
+    "std": 0.311,
+    "n": 3,
+    "values": [
+     64.86,
+     64.93,
+     64.36
+    ]
+   },
+   "utilization": {
+    "mean": 0.682,
+    "std": 0.003,
+    "n": 3,
+    "values": [
+     0.684,
+     0.684,
+     0.678
+    ]
+   }
+  },
+  "nomask": {
+   "label": "PPO (mask 제거 ablation)",
+   "boxes": {
+    "mean": 43.19,
+    "std": 3.596,
+    "n": 3,
+    "values": [
+     39.18,
+     44.26,
+     46.13
+    ]
+   },
+   "utilization": {
+    "mean": 0.456,
+    "std": 0.038,
+    "n": 3,
+    "values": [
+     0.413,
+     0.467,
+     0.487
+    ]
+   }
+  }
+ },
+ "vs_dbl_boxes_pct": 14.3,
+ "action_mask_effect_boxes": 21.53
+}

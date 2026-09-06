@@ -1,0 +1,10 @@
+# WSL/Linux 에서 실행되는 파일은 항상 LF 로 체크아웃 (CRLF 면 bash/colcon 이 깨진다)
+*.sh        text eol=lf
+ros2_ws/**  text eol=lf
+*.rviz      text eol=lf
+*.xml       text eol=lf
+*.py        text eol=lf
+*.md        text
+*.png       binary
+*.pdf       binary
+*.excalidraw text eol=lf

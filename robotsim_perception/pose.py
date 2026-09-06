@@ -156,8 +156,11 @@ def box_to_pick_pose(box, T_base_cam: np.ndarray, clearance_mm: float = 150.0,
     pre = pos - approach * clearance_mm
     post = pos - approach * (clearance_mm + lift_mm)
     dims = g("dims_mm", (0.0, 0.0))
+    bid = g("id")
+    if bid is None:
+        bid = g("box_id", -1)
     return PickPose(
-        box_id=int(g("id", g("box_id", -1)) or -1),
+        box_id=int(bid) if bid is not None else -1,     # `or -1` 로 쓰면 id 0 이 -1 로 바뀐다 (rviz 에서 0번 박스가 늘 회색이던 원인)
         position_mm=tuple(float(v) for v in pos),
         approach=tuple(float(v) for v in approach),
         yaw_deg=round(float(yaw), 2),

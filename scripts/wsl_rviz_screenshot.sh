@@ -34,7 +34,10 @@ sleep 22
 echo "rviz subscribed to /perception/boxes: $(ros2 topic info -v /perception/boxes 2>/dev/null | grep -c 'Node name: rviz')"
 echo "rviz subscribed to /tof/points:       $(ros2 topic info -v /tof/points 2>/dev/null | grep -c 'Node name: rviz')"
 import -display :99 -window root "$OUT"
-kill $RV $NODE $XV 2>/dev/null || true
+# setsid 로 띄웠으므로 PID = 프로세스 그룹 ID. 그룹째 죽여야 `ros2 run` 런처 아래 파이썬 노드까지 정리된다.
+# (런처만 죽이면 노드가 살아남아 다음 실행의 rviz 에 마커를 같이 쏜다 — 실제로 겪은 문제)
+kill -- -$RV -$NODE 2>/dev/null || true
+kill $XV 2>/dev/null || true
 echo "saved $OUT"
 echo "--- rviz2 log (non-GL):"; grep -viE "ogre|GLX|mesa|libGL|^$|X11 connection" /tmp/rviz2.log | head -6 || true
 echo "--- node log tail:"; tail -2 /tmp/perception_node.log | cut -c1-110

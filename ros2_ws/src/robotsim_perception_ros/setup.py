@@ -26,6 +26,7 @@ setup(
     entry_points={
         "console_scripts": [
             "perception_node = robotsim_perception_ros.perception_node:main",
+            "cart_node = robotsim_perception_ros.cart_node:main",
         ],
     },
 )

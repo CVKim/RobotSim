@@ -6,6 +6,10 @@
 set -eo pipefail          # -u 는 ROS setup.bash 가 미정의 변수를 참조해 실패하므로 쓰지 않는다
 SRC="${1:-synthetic}"
 OUT="${2:-/mnt/e/Robot_Sim/assets/ros2_rviz_synthetic.png}"
+# 3~5번째 인자: 노드 실행파일 / rviz 설정 / hz 를 잴 토픽. 대차 모드: cart_node cart.rviz /cart/markers
+NODE_EXE="${3:-perception_node}"
+RVIZ_CFG="${4:-perception.rviz}"
+HZ_TOPIC="${5:-/perception/boxes}"
 WS=/mnt/e/Robot_Sim/ros2_ws
 # shellcheck disable=SC1091
 source /opt/ros/humble/setup.bash
@@ -21,22 +25,24 @@ XV=$!
 sleep 2
 # setsid 필수: 비대화형 셸의 백그라운드 잡으로 `ros2 run` 을 띄우면 타이머가 2프레임 뒤 멈춘다
 # (WSL2 에서 실측: bg 0~2 프레임 vs setsid 14 프레임 / 9초). 자기 세션으로 분리하면 정상.
-setsid ros2 run robotsim_perception_ros perception_node --ros-args -p "source:=$SRC" -p rate_hz:=1.0 \
+setsid ros2 run robotsim_perception_ros "$NODE_EXE" --ros-args -p "source:=$SRC" -p rate_hz:=1.0 \
     -p synthetic_pick_every:=10 > /tmp/perception_node.log 2>&1 &
 NODE=$!
 sleep 8
 echo "node log lines: $(wc -l < /tmp/perception_node.log)"
-echo "boxes hz: $(timeout 6 ros2 topic hz /perception/boxes 2>&1 | grep -m1 average || echo none)"
+echo "$HZ_TOPIC hz: $(timeout 6 ros2 topic hz "$HZ_TOPIC" 2>&1 | grep -m1 average || echo none)"
 
-setsid rviz2 -d "$WS/src/robotsim_perception_ros/config/perception.rviz" > /tmp/rviz2.log 2>&1 &
+setsid rviz2 -d "$WS/src/robotsim_perception_ros/config/$RVIZ_CFG" > /tmp/rviz2.log 2>&1 &
 RV=$!
 sleep 22
-echo "rviz subscribed to /perception/boxes: $(ros2 topic info -v /perception/boxes 2>/dev/null | grep -c 'Node name: rviz')"
+echo "rviz subscribed to $HZ_TOPIC: $(ros2 topic info -v "$HZ_TOPIC" 2>/dev/null | grep -c 'Node name: rviz')"
 echo "rviz subscribed to /tof/points:       $(ros2 topic info -v /tof/points 2>/dev/null | grep -c 'Node name: rviz')"
 import -display :99 -window root "$OUT"
 # setsid 로 띄웠으므로 PID = 프로세스 그룹 ID. 그룹째 죽여야 `ros2 run` 런처 아래 파이썬 노드까지 정리된다.
 # (런처만 죽이면 노드가 살아남아 다음 실행의 rviz 에 마커를 같이 쏜다 — 실제로 겪은 문제)
 kill -- -$RV -$NODE 2>/dev/null || true
+sleep 2
+kill -9 -- -$RV -$NODE 2>/dev/null || true      # rclpy 종료가 늦으면 강제 (잔류 노드 확인: pgrep -af '^/usr/bin/python3 .*_node')
 kill $XV 2>/dev/null || true
 echo "saved $OUT"
 echo "--- rviz2 log (non-GL):"; grep -viE "ogre|GLX|mesa|libGL|^$|X11 connection" /tmp/rviz2.log | head -6 || true

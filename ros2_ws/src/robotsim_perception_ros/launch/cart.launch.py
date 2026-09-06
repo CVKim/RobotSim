@@ -1,8 +1,8 @@
-"""perception_node + rviz2.
+"""cart_node + rviz2 (대차 고리 / 대차 프레임).
 
-  ros2 launch robotsim_perception_ros perception.launch.py                      # 합성 장면, 1 Hz, rviz
-  ros2 launch robotsim_perception_ros perception.launch.py source:=/mnt/h/...   # 실측 세션 재생 (로컬 전용)
-  ros2 launch robotsim_perception_ros perception.launch.py rate_hz:=0.0         # 트리거 모드: ros2 service call ...
+  ros2 launch robotsim_perception_ros cart.launch.py                       # 합성 대차 장면, 1 Hz, rviz
+  ros2 launch robotsim_perception_ros cart.launch.py source:=/mnt/h/...    # 실측 세션 재생 (로컬 전용)
+  ros2 launch robotsim_perception_ros cart.launch.py rate_hz:=0.0          # 트리거 모드
 """
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
@@ -14,23 +14,21 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    cfg = PathJoinSubstitution([FindPackageShare("robotsim_perception_ros"), "config", "perception.rviz"])
+    cfg = PathJoinSubstitution([FindPackageShare("robotsim_perception_ros"), "config", "cart.rviz"])
     return LaunchDescription([
-        DeclareLaunchArgument("source", default_value="synthetic",
-                              description="'synthetic' or a .mim session folder / parent folder"),
+        DeclareLaunchArgument("source", default_value="synthetic"),
         DeclareLaunchArgument("rate_hz", default_value="1.0"),
-        DeclareLaunchArgument("lattice", default_value="true"),
         DeclareLaunchArgument("rviz", default_value="true"),
         Node(
             package="robotsim_perception_ros",
-            executable="perception_node",
-            name="robotsim_perception",
+            executable="cart_node",
+            name="robotsim_cart",
             output="screen",
             parameters=[{
                 "source": LaunchConfiguration("source"),
-                # value_type 고정: `rate_hz:=2` 처럼 정수로 주면 int 로 전달돼 double 파라미터 선언에서 노드가 죽는다
+                # value_type 을 못 박지 않으면 `rate_hz:=2` (정수) 가 int 로 전달되고 rclpy 의 정적 타입 파라미터가
+                # InvalidParameterTypeException 으로 노드를 죽인다 (double 로 선언됨)
                 "rate_hz": ParameterValue(LaunchConfiguration("rate_hz"), value_type=float),
-                "lattice": ParameterValue(LaunchConfiguration("lattice"), value_type=bool),
             }],
         ),
         Node(

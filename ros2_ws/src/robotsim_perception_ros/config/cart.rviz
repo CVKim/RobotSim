@@ -1,0 +1,110 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Cart1
+        - /Cart1/Status1
+        - /Hook pose1
+    Tree Height: 700
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Enabled: true
+      Name: Grid (cart deck)
+      Cell Size: 0.1
+      Plane: XY
+      Plane Cell Count: 20
+      Color: 90; 90; 90
+      Reference Frame: <Fixed Frame>
+    - Class: rviz_default_plugins/TF
+      Enabled: true
+      Name: TF
+      Show Names: true
+      Show Axes: true
+      Show Arrows: true
+      Marker Scale: 0.4
+      Frame Timeout: 15
+    - Class: rviz_default_plugins/PointCloud2
+      Enabled: true
+      Name: ToF points
+      Topic:
+        Value: /tof/points
+        Depth: 1
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+      Color Transformer: Intensity
+      Channel Name: intensity
+      Use rainbow: false
+      Autocompute Intensity Bounds: false
+      Min Intensity: 0
+      Max Intensity: 12000
+      Min Color: 40; 44; 52
+      Max Color: 235; 238; 245
+      Position Transformer: XYZ
+      Style: Flat Squares
+      Size (m): 0.005
+      Alpha: 0.7
+      Decay Time: 0
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Cart
+      Topic:
+        Value: /cart/markers
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+      Namespaces:
+        cart: true
+        cart_label: true
+    - Class: rviz_default_plugins/Pose
+      Enabled: true
+      Name: Hook pose
+      Topic:
+        Value: /cart/hook_pose
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+      Shape: Axes
+      Axes Length: 0.08
+      Axes Radius: 0.008
+  Enabled: true
+  Global Options:
+    # 고정 프레임 = 대차. 데크가 수평(XY), 고리가 서 있고, 카메라 프레임(tof_optical)이 위에서 움직이는 것이 보인다.
+    # 노드가 OK 를 내기 전(동적 TF 없음)에는 잠시 'Fixed Frame does not exist' 가 뜬다 — 정상.
+    Background Color: 34; 36; 40
+    Fixed Frame: cart
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Name: Current View
+      Distance: 1.25
+      Focal Point:
+        X: 0.12
+        Y: -0.22
+        Z: 0.05
+      Pitch: 0.6
+      Yaw: 1.25
+      Near Clip Distance: 0.01
+      Target Frame: <Fixed Frame>
+    Saved: ~
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 1000
+  Width: 1600
+  X: 0
+  Y: 0

@@ -59,14 +59,14 @@ GROUPS = [
             "열 스캔 규칙 (실제 81% 일치)",
             "JSON 스키마 1.0 · CLI",
             "지연 v1 52 ms / v2 340 ms",
-            "pytest 37 (34개 합성만으로)",
+            "pytest 51 (46개 합성만으로)",
         ]),
     ]),
-    dict(id="ros", title="ROS2 Humble (WSL2)  perception_node — 신규", x=350, y=430, w=440, h=140, style="new", lines=[
-        "/tof/points PointCloud2 · TF base_link → tof_optical",
+    dict(id="ros", title="ROS2 Humble (WSL2)  perception_node · cart_node — 신규", x=350, y=430, w=440, h=140, style="new", lines=[
+        "/tof/points PointCloud2 · TF base_link → tof_optical (정적)",
         "/perception/boxes MarkerArray · /perception/pick_poses PoseArray",
-        "/perception/status JSON · /diagnostics · ~/capture Trigger",
-        "rviz2 설정 · launch · 합성 소스 → 회사 데이터 없이 실행",
+        "/cart/hook_pose · TF tof_optical → cart (동적, 대차 구조물에서 추정)",
+        "status JSON · /diagnostics · ~/capture Trigger · rviz2 · launch · 합성 소스",
     ]),
     dict(id="twin", title="MuJoCo 셀 디지털 트윈", x=860, y=60, w=300, h=160, style="normal", lines=[
         "실측 역산 지오메트리 (2970 vs 2973 mm)",

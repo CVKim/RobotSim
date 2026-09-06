@@ -23,14 +23,14 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 | sim2real / 학습 세그 | 합성 전용 0.00 → 노이즈 시뮬 0.43 → +실측 6장 0.99 · seg mAP50 0.99(무효 15%↑ 붕괴) | [상세 §4](docs/30_결과_상세.md#4-합성데이터-sim2real) · §6 |
 | 팔레타이징 RL (3시드) | MaskablePPO 64.7±0.3 vs 휴리스틱 56.6 (+14.3%) · mask 제거 43.2 | [상세 §3](docs/30_결과_상세.md#3-팔레타이징-강화학습) · `results/palletize_multiseed.json` |
 | 모방학습 · VLA | DART BC 100% (가상 Franka) · SmolVLA 파인튜닝 VRAM 4.7 GB | [상세 §5](docs/30_결과_상세.md#5-가상환경-제어모방학습-mujoco-franka) |
-| 테스트 | pytest **37** (34개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 | `tests/` |
+| 테스트 | pytest **51** (46개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · colcon test 12 | `tests/` · `ros2_ws/.../test/` |
 
 ## 구성
 
 | 영역 | 무엇 | 어디 |
 |---|---|---|
 | 인식 패키지 | 검출(geometry) · 로봇 좌표/6-DoF 포즈(pose) · 판정 상태·드리프트(runtime) · 픽 순서(planner) · CLI/JSON | [`robotsim_perception/`](robotsim_perception/) · [docs/40](docs/40_패키지_사용법.md) |
-| ROS2 (Humble, WSL2) | `perception_node`: PointCloud2 · MarkerArray · PoseArray(base_link) · status · diagnostics · TF · Trigger 서비스 · rviz2 | [`ros2_ws/`](ros2_ws/src/robotsim_perception_ros/) · [docs/42](docs/42_ROS2_핸즈온.md) |
+| ROS2 (Humble, WSL2) | `perception_node`(빈피킹: PoseArray base_link · 정적 TF) · `cart_node`(대차: 동적 TF tof_optical→cart · 도킹 목표 포즈) · status · diagnostics · Trigger 서비스 · rviz2 · colcon test 12 | [`ros2_ws/`](ros2_ws/src/robotsim_perception_ros/) · [docs/42](docs/42_ROS2_핸즈온.md) |
 | 셀 디지털 트윈 | 실측 역산 지오메트리 MJCF · 절대 정답 평가 · 인식 구동 픽/플레이스 폐루프 | [`sim/`](sim/) · [docs/41](docs/41_셀_트윈.md) |
 | 학습 · 시뮬 | BlenderProc/Isaac SDG · YOLO det/seg · MaskablePPO · BC/DART · SmolVLA · 로컬 VLM | [`tools/`](tools/) |
 | 검증 · 재현 | 교란 벤치 · 트윈 평가 · 전 세션 파리티 · 집계 JSON 공개 | [`tests/`](tests/) · [`results/`](results/) · [docs/21 실험로그](docs/21_실험로그.md) |
@@ -44,6 +44,16 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 
 *초록 = 직접 검출, 주황 = 격자 보완 셀, 회색 = 저신뢰(계획 제외), 축 = 픽 포즈, 파란 화살표 = 다음 픽 접근.
 빌드·실행·CLI 탐색·직접 작성할 실습 노드: [docs/42](docs/42_ROS2_핸즈온.md). WSL2 에서 겪은 DDS 공유메모리·시계 점프 문제와 해법도 거기에.*
+
+두 번째 노드 `cart_node` 는 **대차 견인 고리** 데이터용이다. 카메라가 데크를 약 40° 비스듬히 보므로 탑다운 가정 대신
+데크 플레이트 평면·림·레일에서 **대차 좌표계를 매 프레임 추정**해 동적 TF(`tof_optical → cart`)와
+`/cart/hook_pose`(위치 = 고리, 자세 = 대차 축)를 낸다. 합성 소스는 카메라 높이 400~462 mm 를 바꿔 가며
+"카메라 좌표는 변해도 대차 좌표는 같다"를 보여 준다. 실측 4세션에서 이 구조 프레임의 고리 반복성은 **3.85 mm RMS**(면내 3.1 mm)이고,
+위 표의 3.2 mm 는 여기에 데크 ICP 정련을 더한 오프라인 수치다(노드는 ICP 없이 돈다):
+
+![rviz cart](assets/ros2_rviz_cart_synthetic.png)
+
+*파란 판 = 데크 평면, 자홍 선 = 림(v'=0), 노란 선 = 레일 안쪽 벽(u'=0, u'=간격), 초록 기둥 = 고리, 축 = 고리 포즈(대차 자세).*
 
 ## 한계 (읽고 수치를 쓸 것)
 
@@ -73,7 +83,7 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 ```powershell
 E:\Robot_Sim\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu126
-python -m pytest tests -q                                          # 37 passed
+python -m pytest tests -q                                          # 51 passed (실측 데이터 없으면 5건 skip, 46 passed)
 python -m robotsim_perception run <session_dir> --lattice --json out.json --overlay out.png
 .venv\Scripts\python.exe tools/twin_detect_eval.py --scenes 24   # 트윈 절대 정확도
 .venv\Scripts\python.exe tools/twin_closed_loop.py --episodes 10  # 폐루프

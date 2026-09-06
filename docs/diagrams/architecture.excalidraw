@@ -740,14 +740,14 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "열 스캔 규칙 (실제 81% 일치)\nJSON 스키마 1.0 · CLI\n지연 v1 52 ms / v2 340 ms\npytest 37 (34개 합성만으로)",
+   "text": "열 스캔 규칙 (실제 81% 일치)\nJSON 스키마 1.0 · CLI\n지연 v1 52 ms / v2 340 ms\npytest 51 (46개 합성만으로)",
    "fontSize": 12.5,
    "fontFamily": 1,
    "textAlign": "left",
    "verticalAlign": "top",
    "baseline": 12.5,
    "containerId": null,
-   "originalText": "열 스캔 규칙 (실제 81% 일치)\nJSON 스키마 1.0 · CLI\n지연 v1 52 ms / v2 340 ms\npytest 37 (34개 합성만으로)",
+   "originalText": "열 스캔 규칙 (실제 81% 일치)\nJSON 스키마 1.0 · CLI\n지연 v1 52 ms / v2 340 ms\npytest 51 (46개 합성만으로)",
    "lineHeight": 1.25
   },
   {
@@ -797,7 +797,7 @@
    "y": 438,
    "strokeColor": "#1d4ed8",
    "backgroundColor": "transparent",
-   "width": 360.6,
+   "width": 465.0,
    "height": 18.8,
    "seed": 442292976,
    "groupIds": [
@@ -809,14 +809,14 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "ROS2 Humble (WSL2)  perception_node — 신규",
+   "text": "ROS2 Humble (WSL2)  perception_node · cart_node — 신규",
    "fontSize": 15,
    "fontFamily": 1,
    "textAlign": "left",
    "verticalAlign": "top",
    "baseline": 15,
    "containerId": null,
-   "originalText": "ROS2 Humble (WSL2)  perception_node — 신규",
+   "originalText": "ROS2 Humble (WSL2)  perception_node · cart_node — 신규",
    "lineHeight": 1.25
   },
   {
@@ -835,7 +835,7 @@
    "y": 466,
    "strokeColor": "#1e1e1e",
    "backgroundColor": "transparent",
-   "width": 482.6,
+   "width": 557.2,
    "height": 65.0,
    "seed": 1141860530,
    "groupIds": [
@@ -847,14 +847,14 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "/tof/points PointCloud2 · TF base_link → tof_optical\n/perception/boxes MarkerArray · /perception/pick_poses PoseArray\n/perception/status JSON · /diagnostics · ~/capture Trigger\nrviz2 설정 · launch · 합성 소스 → 회사 데이터 없이 실행",
+   "text": "/tof/points PointCloud2 · TF base_link → tof_optical (정적)\n/perception/boxes MarkerArray · /perception/pick_poses PoseArray\n/cart/hook_pose · TF tof_optical → cart (동적, 대차 구조물에서 추정)\nstatus JSON · /diagnostics · ~/capture Trigger · rviz2 · launch · 합성 소스",
    "fontSize": 13,
    "fontFamily": 1,
    "textAlign": "left",
    "verticalAlign": "top",
    "baseline": 13,
    "containerId": null,
-   "originalText": "/tof/points PointCloud2 · TF base_link → tof_optical\n/perception/boxes MarkerArray · /perception/pick_poses PoseArray\n/perception/status JSON · /diagnostics · ~/capture Trigger\nrviz2 설정 · launch · 합성 소스 → 회사 데이터 없이 실행",
+   "originalText": "/tof/points PointCloud2 · TF base_link → tof_optical (정적)\n/perception/boxes MarkerArray · /perception/pick_poses PoseArray\n/cart/hook_pose · TF tof_optical → cart (동적, 대차 구조물에서 추정)\nstatus JSON · /diagnostics · ~/capture Trigger · rviz2 · launch · 합성 소스",
    "lineHeight": 1.25
   },
   {

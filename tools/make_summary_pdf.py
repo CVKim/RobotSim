@@ -77,9 +77,9 @@ def page1(pdf):
     fig = plt.figure(figsize=(PAGE_W, PAGE_H))
     text(fig, 0.04, 0.965, "Robot_Sim — 실측 ToF 인식 → 로봇 좌표 → 셀 트윈 폐루프 → ROS2", 15, weight="bold")
     text(fig, 0.04, 0.928,
-         "실공장 ToF 30프레임(단일 SKU)으로 박스 검출·mm 치수·6-DoF 픽 포즈(로봇 베이스 좌표)를 만들고, MuJoCo 셀 트윈에서 "
-         "인식 출력만으로 집어 옮기는 폐루프를 닫은 뒤 ROS2 노드/rviz2 로 연결. 절대 정답·교란 격자·전 세션 파리티로 검증. "
-         "실로봇 없음, 원본 데이터 비공개(집계·depth 시각화만).",
+         "실공장 ToF 데이터 두 종(빈피킹 30프레임 · 대차 견인 고리 4세션)으로 박스 검출·mm 치수·6-DoF 픽 포즈(로봇 베이스 좌표)와 "
+         "대차 구조물 기준 좌표계를 만들고, MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프를 닫은 뒤 ROS2 노드 2종/rviz2 로 연결. "
+         "절대 정답·교란 격자·전 세션 파리티로 검증. 실로봇 없음, 원본 데이터 비공개(집계·depth 시각화만).",
          9.0, MUTED, wrap=0.92)
     image(fig, A / "architecture.png", (0.04, 0.855, 0.92, 0.41))
 
@@ -90,9 +90,9 @@ def page1(pdf):
         ("절대 정확도 (트윈 48장면)", "중심 8.5 mm(클린) / 9.8 mm(노이즈) · 깊이 0.0 · 잔여>=4 정밀도 0.95"),
         ("인식→제어 폐루프 (트윈 60회)", "oracle 100% vs 인식 46.7% → 인식 비용 53 %p · 11.7 s/픽"),
         ("강건성 (교란 격자, 3시드)", "결손 30개에서 위치일치 리콜 v1 57% → v2 74%"),
-        ("대차 후크 반복성", "데크 ICP 22.7 → 3.2 mm (전체장면 ICP 17.6 mm 의 오류 원인 규명)"),
+        ("대차 고리 · 대차 좌표계 (실측 4세션)", "데크 평면·림·레일에서 좌표계 추정 → 고리 반복성 22.7 → 3.85 mm (데크 ICP 정련 시 3.2) · 카메라 높이 400~463 mm"),
         ("팔레타이징 RL (3시드)", "MaskablePPO 64.7±0.3 vs 휴리스틱 56.6 (+14.3%) · mask 제거 43.2"),
-        ("ROS2 (Humble, WSL2)", "PointCloud2 · MarkerArray · PoseArray(base_link) · status · TF · Trigger, rviz2"),
+        ("ROS2 (Humble, WSL2) 노드 2종", "빈피킹: PoseArray(base_link)·정적 TF · 대차: 동적 TF tof_optical→cart·도킹 목표 포즈 · rviz2 · colcon test 12"),
     ]
     y = 0.385
     for k, v in rows:
@@ -103,7 +103,7 @@ def page1(pdf):
     # ---- 검증 / 한계 (우)
     text(fig, 0.63, 0.415, "검증 방식", 11, weight="bold")
     text(fig, 0.63, 0.385,
-         "• pytest 37 (34개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2\n"
+         "• pytest 51 (46개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · colcon test 12\n"
          "• 셀 트윈 절대 정답: mjData 의 실제 박스 포즈와 비교 (pseudo-GT 순환 참조 제거)\n"
          "• 교란 격자(무효픽셀·깊이노이즈·대비·대면적 결손) × 3시드, 부트스트랩 95% CI\n"
          "• 폐루프는 oracle(정답 포즈)을 나란히 돌려 인식 비용을 분리",
@@ -123,20 +123,26 @@ def page1(pdf):
 def page2(pdf):
     fig = plt.figure(figsize=(PAGE_W, PAGE_H))
     text(fig, 0.04, 0.965, "결과 그림", 15, weight="bold")
-    W, H = 0.44, 0.33
-    image(fig, A / "detector_v2_recovered.png", (0.04, 0.89, W, H),
-          "1. 검출 v1 → v2 (실측 depth 시각화)",
-          "위: 2층 중앙 2박스가 v1 에서 병합 → 격자 보완으로 회수. 아래: 잔여 2박스가 바닥 피크에 밀림 → 층 재시도. 30프레임 152 → 167/167.")
-    image(fig, A / "twin_detect_accuracy.png", (0.53, 0.89, W, H),
-          "2. 트윈 절대 정답 기준 정확도 (48장면)",
-          "실제 박스 포즈 대비 중심오차 8.5/9.8 mm, 치수 바이어스 L -8.0/-15.4 mm. 검출기 결함 2건(센티넬 오염·층 선택)을 여기서 발견해 수정.")
-    image(fig, A / "twin_closed_loop.png", (0.04, 0.45, W, H),
-          "3. 인식→제어 폐루프 (MuJoCo 셀 트윈)",
-          "정책은 인식 출력만 사용. oracle 100% vs 인식 구동 46.7% — 지배 실패는 소스 미검출(잔여 소수 층 선택). 사이클 11.7 s/픽.")
-    image(fig, A / "ros2_rviz_synthetic.png", (0.53, 0.45, W, H),
-          "4. ROS2 perception_node + rviz2 (합성 소스)",
-          "포인트클라우드(tof_optical) · 박스 마커(초록 직접 검출, 주황 격자 보완) · 픽 포즈 축(base_link) · 파란 화살표 = 다음 픽. "
-          "status/diagnostics · Trigger 서비스. WSL2 Humble, 회사 데이터 없이 실행.")
+    W, H = 0.29, 0.34
+    X = (0.04, 0.355, 0.67)
+    image(fig, A / "detector_v2_recovered.png", (X[0], 0.895, W, H),
+          "1. 검출 v1 → v2 (실측 depth)",
+          "2층 중앙 2박스 병합 → 격자 보완으로 회수, 잔여 2박스 층 재시도. 30프레임 152 → 167/167.")
+    image(fig, A / "twin_detect_accuracy.png", (X[1], 0.895, W, H),
+          "2. 트윈 절대 정답 정확도 (48장면)",
+          "실제 박스 포즈 대비 중심 8.5/9.8 mm, 치수 L -8.0/-15.4 mm. 검출기 결함 2건을 여기서 발견해 수정.")
+    image(fig, A / "twin_closed_loop.png", (X[2], 0.895, W, H),
+          "3. 인식→제어 폐루프 (셀 트윈)",
+          "정책은 인식 출력만 사용. oracle 100% vs 인식 46.7% — 지배 실패는 잔여 소수 층 선택. 11.7 s/픽.")
+    image(fig, A / "ros2_rviz_synthetic.png", (X[0], 0.46, W, H),
+          "4. ROS2 perception_node (빈피킹)",
+          "초록 직접 검출·주황 격자 보완, 픽 포즈 축(base_link), 파란 화살표 = 다음 픽. 정적 TF, Trigger 서비스.")
+    image(fig, A / "ros2_rviz_cart_synthetic.png", (X[1], 0.46, W, H),
+          "5. ROS2 cart_node (대차 고리)",
+          "고정 프레임 = 대차. 파란 판 데크, 자홍 림, 노란 레일, 초록 고리, 위의 축 = 카메라(tof_optical). 동적 TF.")
+    image(fig, A / "hook_v2_overlay.png", (X[2], 0.46, W, H),
+          "6. 실측 대차 고리 검출 (ToF 강도 이미지)",
+          "높이 밴드 안 '밝은' 성분 = 고리 벽(빨강), 크라운(노랑), 레일(주황) 분리. 4세션 반복성: 구조 프레임 3.85 · 데크 ICP 3.2 mm RMS.")
     text(fig, 0.04, 0.03, "상세: docs/30_결과_상세.md · docs/41_셀_트윈.md · docs/42_ROS2_핸즈온.md", 7.8, MUTED)
     pdf.savefig(fig)
     plt.close(fig)

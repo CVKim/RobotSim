@@ -233,3 +233,115 @@ def diagnostics(dec, health: dict, stamp, hw_id: str = "tof") -> DiagnosticArray
     s2.values = [KeyValue(key=k, value=str(v)) for k, v in health.items() if k != "status"]
     da.status = [s1, s2]
     return da
+
+
+# ------------------------------------------------------------------ 대차(카트) 모드
+# cart.CartResult -> TF(tof_optical -> cart), PoseStamped(고리, tof_optical), MarkerArray(cart 프레임), 진단.
+# 대차 프레임은 프레임마다 다시 추정되므로 정적이 아니라 동적 TF 로 낸다.
+
+def cart_transform(res, stamp, cam_frame: str, cart_frame: str) -> TransformStamped:
+    """p_cart = R @ p_cam + t (mm)  ->  TF parent=cam_frame, child=cart_frame.
+
+    TF 는 '자식 프레임의 원점·축을 부모 좌표로' 표현하므로 회전 = R^T, 이동 = -R^T t (m)."""
+    R = np.asarray(res.R_cart, float)
+    t = np.asarray(res.t_cart, float)
+    ts = TransformStamped()
+    ts.header = header(stamp, cam_frame)
+    ts.child_frame_id = cart_frame
+    o = -R.T @ t
+    ts.transform.translation = Vector3(x=float(o[0]) * MM, y=float(o[1]) * MM, z=float(o[2]) * MM)
+    ts.transform.rotation = quat_from_matrix(R.T)
+    return ts
+
+
+def hook_pose_stamped(res, stamp, cam_frame: str) -> PoseStamped:
+    """고리 wall_top 을 카메라 프레임 PoseStamped 로. 자세 = 대차 축(도킹 목표 자세)."""
+    ps = PoseStamped()
+    ps.header = header(stamp, cam_frame)
+    p = res.hook_cam_mm
+    ps.pose.position = Point(x=p[0] * MM, y=p[1] * MM, z=p[2] * MM)
+    ps.pose.orientation = quat_from_matrix(np.asarray(res.R_cart, float).T)
+    return ps
+
+
+def cart_markers(res, stamp, cart_frame: str, ns: str = "cart") -> MarkerArray:
+    """대차 프레임 마커: 데크 판, 림 라인(v'=0), 레일 안쪽 벽(u'=0, u'=gap), 고리 기둥 + 라벨. 첫 요소 DELETEALL."""
+    ma = MarkerArray()
+    clear = Marker()
+    clear.header = header(stamp, cart_frame)
+    clear.ns, clear.id, clear.action, clear.type = ns + "_clear", 0, Marker.DELETEALL, Marker.CUBE
+    clear.scale = Vector3(x=0.1, y=0.1, z=0.1)
+    clear.pose.orientation = Quaternion(w=1.0)
+    clear.color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0)
+    ma.markers.append(clear)
+    if res.status != "OK":
+        return ma
+
+    def mk(mid, mtype, rgb, scale, ns_suffix=""):
+        m = Marker()
+        m.header = header(stamp, cart_frame)
+        m.ns, m.id, m.type, m.action = ns + ns_suffix, mid, mtype, Marker.ADD
+        m.pose.orientation = Quaternion(w=1.0)
+        m.scale = Vector3(x=scale[0], y=scale[1], z=scale[2])
+        m.color = ColorRGBA(r=rgb[0], g=rgb[1], b=rgb[2], a=1.0)
+        return m
+
+    u0, u1, v0, v1 = (float(x) * MM for x in res.deck_extent_cart_mm)
+    deck = mk(0, Marker.CUBE, (0.30, 0.38, 0.50), (max(u1 - u0, 0.05), max(v1 - v0, 0.05), 0.02))
+    # 포인트클라우드(h≈0)가 판 위에 보이도록 판은 h -3..-1 cm 에 둔다
+    deck.pose.position = Point(x=(u0 + u1) / 2, y=(v0 + v1) / 2, z=-0.02)
+    ma.markers.append(deck)
+
+    rim = mk(1, Marker.LINE_STRIP, (0.95, 0.35, 0.95), (0.006, 0.0, 0.0))
+    rim.points = [Point(x=u0, y=0.0, z=0.003), Point(x=u1, y=0.0, z=0.003)]
+    ma.markers.append(rim)
+
+    rails = mk(2, Marker.LINE_LIST, (1.0, 0.85, 0.2), (0.006, 0.0, 0.0))
+    rails.points = [Point(x=0.0, y=v0, z=0.03), Point(x=0.0, y=-0.05, z=0.03)]
+    gap = res.cart.get("rail_gap_mm")
+    if gap:
+        g = float(gap) * MM
+        rails.points += [Point(x=g, y=v0, z=0.03), Point(x=g, y=-0.05, z=0.03)]
+    ma.markers.append(rails)
+
+    u, v, h = (float(x) * MM for x in res.hook_cart_mm)
+    hook = mk(3, Marker.CUBE, (0.1, 0.85, 0.3), (0.03, 0.04, max(h, 0.02)))
+    hook.pose.position = Point(x=u, y=v - 0.02, z=h / 2)        # 벽면이 v'=0(림)에 있고 몸통은 뒤(-v')로
+    ma.markers.append(hook)
+
+    label = mk(4, Marker.TEXT_VIEW_FACING, (1.0, 1.0, 1.0), (0.025, 0.025, 0.025), "_label")
+    label.pose.position = Point(x=u, y=v + 0.05, z=h + 0.08)   # 카메라 쪽(+v')·위로 띄워 TF 이름과 겹치지 않게
+    hu, hv, hh = res.hook_cart_mm
+    label.text = f"hook u={hu:.0f} v={hv:.0f} h={hh:.0f} mm"
+    ma.markers.append(label)
+    return ma
+
+
+_CART_LEVEL = {"OK": DiagnosticStatus.OK, "NO_HOOK": DiagnosticStatus.WARN,
+               "NO_CART_FRAME": DiagnosticStatus.WARN, "NO_PLANE": DiagnosticStatus.ERROR}
+
+
+def cart_status_string(res, extra: dict | None = None) -> String:
+    d = json.loads(res.log_line())
+    if extra:
+        d.update(extra)
+    return String(data=json.dumps(d, ensure_ascii=False))
+
+
+def cart_diagnostics(res, stamp, hw_id: str = "tof") -> DiagnosticArray:
+    da = DiagnosticArray()
+    da.header = header(stamp, "")
+    st = DiagnosticStatus(level=_CART_LEVEL.get(res.status, DiagnosticStatus.WARN),
+                          name="robotsim_cart/hook", message=f"{res.status}: {res.reason}", hardware_id=hw_id)
+    vals = {"valid_frac": f"{res.valid_frac:.3f}", "latency_ms": f"{res.latency_ms:.1f}"}
+    if res.plane:
+        vals["plate_mad_mm"] = str(res.plane["plate_mad_mm"])
+        vals["camera_height_mm"] = str(res.plane["camera_height_mm"])
+    for k in ("rim_fit_mad_mm", "rail_edge_mad_mm", "rim_yaw_deg", "rail_gap_mm"):
+        if k in res.cart:
+            vals[k] = str(res.cart[k])
+    if res.hook_cart_mm:
+        vals["hook_cart_mm"] = ",".join(f"{x:.1f}" for x in res.hook_cart_mm)
+    st.values = [KeyValue(key=k, value=v) for k, v in vals.items()]
+    da.status = [st]
+    return da

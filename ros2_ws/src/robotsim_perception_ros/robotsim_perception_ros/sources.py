@@ -79,3 +79,34 @@ def make_source(spec: str, seed: int = 0, loop: bool = True, pick_every: int = 1
     if spec in ("", "synthetic"):
         return SyntheticSource(seed=seed, loop=loop, pick_every=pick_every)
     return SessionSource(spec, loop=loop)
+
+
+# ------------------------------------------------------------------ 대차(카트) 소스
+
+class SyntheticCartSource:
+    """합성 대차 장면. 프레임마다 카메라 높이·대차 yaw 를 바꿔 '카메라 좌표는 변해도 대차 프레임 좌표는 같다'를 보여 준다.
+    실측 4세션의 카메라 높이 400~463 mm 범위를 따른다."""
+    HEIGHTS = (400.0, 420.0, 440.0, 462.0)
+    YAWS = (0.0, 4.0, -3.0, 2.0)
+
+    def __init__(self, seed: int = 0, loop: bool = True, noise_mm: float = 2.5):
+        from robotsim_perception.synthetic_cart import make_cart_frame
+        self._make = make_cart_frame
+        self.seed, self.loop, self.noise_mm = int(seed), loop, float(noise_mm)
+        self.k = 0
+
+    def next(self):
+        n = len(self.HEIGHTS)
+        if self.k >= n and not self.loop:
+            return None
+        i = self.k % n
+        frame, _gt = self._make(seed=self.seed + self.k, cam_height_mm=self.HEIGHTS[i],
+                                cart_yaw_deg=self.YAWS[i], noise_mm=self.noise_mm)
+        self.k += 1
+        return frame, f"synthetic_cart#{self.k} (h={self.HEIGHTS[i]:.0f} yaw={self.YAWS[i]:+.0f})"
+
+
+def make_cart_source(spec: str, seed: int = 0, loop: bool = True):
+    if spec in ("", "synthetic"):
+        return SyntheticCartSource(seed=seed, loop=loop)
+    return SessionSource(spec, loop=loop)

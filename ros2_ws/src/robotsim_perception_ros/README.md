@@ -41,6 +41,27 @@ colcon test --packages-select robotsim_perception_ros && colcon test-result --ve
 
 실측 세션 재생(로컬 전용): `source:=/mnt/h/<세션 폴더 또는 상위 폴더>`.
 
+## 두 번째 노드 — `cart_node` (대차 견인 고리)
+
+카메라가 대차 데크를 약 40° 비스듬히 보는 데이터. 탑다운 가정 대신 **데크 플레이트 평면·림·레일에서 대차 좌표계를 매 프레임 추정**
+(`robotsim_perception.cart.analyze_cart`)해 동적 TF 로 낸다.
+
+| 토픽 / 서비스 | 타입 | 프레임 | 내용 |
+|---|---|---|---|
+| `/tof/points` | `sensor_msgs/PointCloud2` | `tof_optical` | 위와 동일 |
+| `/cart/hook_pose` | `geometry_msgs/PoseStamped` | `tof_optical` | 위치 = 고리 wall_top, 자세 = 대차 축 (도킹 목표 자세) |
+| `/cart/markers` | `visualization_msgs/MarkerArray` | `cart` | 데크 판 · 림 라인(v'=0) · 레일 안쪽 벽(u'=0, u'=간격) · 고리 기둥 + 라벨 |
+| `/cart/status` | `std_msgs/String` | — | `CartResult` 한 줄 JSON (`hook_cart_mm`, `rim_yaw_deg`, `rail_gap_mm`, 피팅 MAD, 지연) |
+| `/diagnostics` | `diagnostic_msgs/DiagnosticArray` | — | OK / NO_HOOK·NO_CART_FRAME(WARN) / NO_PLANE(ERROR) + 피팅 품질 |
+| TF (**dynamic**) | `tof_optical → cart` | — | 프레임마다 `R_cart, t_cart` 재추정. 상태가 OK 가 아니면 내지 않는다 |
+| `~/capture` | `std_srvs/Trigger` | — | 프레임 1장 즉시 처리 |
+
+```bash
+ros2 launch robotsim_perception_ros cart.launch.py          # 합성 대차 장면(카메라 높이 400~462 mm 순환) + rviz2 (고정 프레임 = cart)
+ros2 run tf2_ros tf2_echo tof_optical cart
+ros2 topic echo /cart/hook_pose --once
+```
+
 ## 한계
 
 - 실로봇·센서 드라이버 없음. `source` 는 합성 또는 파일 재생이며, 실제 셀에서는 이 자리에 센서 SDK 노드가 온다.

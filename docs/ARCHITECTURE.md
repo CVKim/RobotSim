@@ -32,6 +32,7 @@ flowchart TD
 | `tof_optical` | 카메라 광학. x 오른쪽, y 아래, z 전방(깊이). 실측 `.mim` 의 X/Y/D 와 동일 | `frame.py`, ROS `/tof/points` |
 | `base_link` | 로봇 베이스. `T_base_cam`(4×4, mm)으로 변환. 기본값은 탑다운 설치 예시 (카메라 높이 4.183 m, R = diag(1,−1,−1)) | `pose.py`, ROS TF static |
 | 트윈 월드 | MuJoCo. `ToF_X = world_X`, `ToF_Y = −world_Y`, `ToF_D = CAM_H − world_Z` | `sim/cell_twin.py` |
+| `cart` (대차) | 대차 구조물 프레임. 원점 = 플레이트 림 라인 × 왼쪽 레일 안쪽 벽, u' 림 방향, v' 림에 수직(카메라 쪽 +), h 플레이트 법선. **프레임마다 재추정**, `tof_optical` 의 자식 동적 TF | `cart.py` `_cart_frame`, ROS `msgs.cart_transform` |
 
 실제 `T_base_cam` 값은 핸드아이 캘리브레이션이 필요하다(하드웨어). 값이 틀리면 픽 포즈가 통째로 밀리므로
 `runtime.HealthMonitor` 가 정적 배경 깊이 편차로 드리프트를 감시한다.
@@ -52,4 +53,21 @@ flowchart LR
   M --> R
   Q --> R
   Q --> X["pick_executor<br/>(docs/42 실습 과제 — 직접 작성)"]
+```
+
+대차(카트) 모드는 별도 노드다. 카메라가 데크를 약 40° 비스듬히 보므로 탑다운 가정을 쓸 수 없고,
+좌표계를 **대차 구조물(플레이트 평면 · 림 · 레일)** 에서 매 프레임 추정해 동적 TF 로 낸다:
+
+```mermaid
+flowchart LR
+  SRC2["source<br/>synthetic_cart | .mim 재생"] --> C["cart_node<br/>cart.analyze_cart()"]
+  C -->|PointCloud2 tof_optical| P2["/tof/points"]
+  C -->|PoseStamped tof_optical<br/>위치 = 고리, 자세 = 대차 축| HP["/cart/hook_pose"]
+  C -->|MarkerArray cart| CM["/cart/markers<br/>데크 판 · 림 · 레일 · 고리"]
+  C -->|String JSON| CS["/cart/status"]
+  C -->|DiagnosticArray| CD["/diagnostics"]
+  C -.->|TF 동적| T2["tof_optical → cart"]
+  P2 --> R2["rviz2"]
+  CM --> R2
+  HP --> R2
 ```

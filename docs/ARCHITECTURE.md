@@ -1,81 +1,55 @@
-# 파이프라인 아키텍처
+# 아키텍처
 
-> GitHub이 Mermaid를 직접 렌더링합니다. 편집용 손그림 버전: [`diagrams/pipeline.excalidraw`](diagrams/pipeline.excalidraw) (excalidraw.com에서 열기)
+## 1. 한 장 요약
 
-## 1. 전체 맵 — 데이터에서 데모까지
+![architecture](../assets/architecture.svg)
 
-```mermaid
-flowchart LR
-  subgraph DATA["실데이터 (비공개, 이적재 공정)"]
-    MIM["ToF .mim (Matrox MIL/TIFF)<br/>X·Y·D·I 640×480, mm"]
-    RGBI["RGB 5MP"]
-  end
+- 생성: `python tools/make_architecture_diagram.py` → `assets/architecture.svg` + `docs/diagrams/architecture.excalidraw`
+  (같은 스펙에서 둘 다 생성하므로 어긋나지 않는다. 수치가 바뀌면 생성기의 텍스트만 고치고 재실행)
+- 손으로 다듬으려면 `architecture.excalidraw` 를 [excalidraw.com](https://excalidraw.com) 에서 연다
 
-  subgraph PERC["인식 · 분석 (tools/)"]
-    LOADER["mim_loader.py<br/>TIFF 디코드 + valid mask"]
-    TOP["binpick_topface.py<br/>층 깊이 검출 + I채널 에지로 박스 분리<br/>148박스, 293×219mm ±3%"]
-    PICKP["binpick_pickpoints.py<br/>평면 피팅 픽포인트 + 슬롯 추적<br/>픽 순서 자동 복원"]
-    HOOK["hook_analysis.py<br/>RANSAC 평면 + 후크 클러스터<br/>4/4 검출, 높이 반복성 1.2mm"]
-    NOISE["tof_noise_study.py<br/>정적픽셀 12.7만개 실측<br/>σ(mm) = 180.3 × I^-0.805"]
-  end
-
-  subgraph RL["시뮬레이션 · 강화학습"]
-    ENV["palletize_env.py<br/>실측 치수 시드 heightmap 환경<br/>DBL 휴리스틱 56.6박스/59.8%"]
-    PPO["palletize_train.py<br/>MaskablePPO 1.5M steps<br/>64.9박스/68.5% (+14.7%)"]
-  end
-
-  subgraph DEMO["통합 데모 (인식 ↔ 정책)"]
-    PICKN["pick_next.py<br/>최소 동선 픽 제안<br/>실제 순서 대비 top-2 81%"]
-    PLACE["transfer_place_v3.py<br/>목적지 스택 위 배치 제안"]
-  end
-
-  MIM --> LOADER
-  LOADER --> TOP --> PICKP
-  LOADER --> HOOK
-  LOADER --> NOISE
-  TOP -- "치수 분포 293×219×283" --> ENV --> PPO
-  NOISE -. "합성데이터 노이즈 주입 (예정 T5)" .-> ENV
-  PICKP --> PICKN
-  PICKP -- "적재 상태 이식" --> PLACE
-  PPO --> PLACE
-```
-
-## 2. 인식 파이프라인 상세 (무학습 기하)
+## 2. 인식 파이프라인 (무학습 기하) — `robotsim_perception/geometry.py`
 
 ```mermaid
 flowchart TD
-  A["ToF 프레임 D·I·X·Y"] --> B["중앙 ROI 깊이 히스토그램<br/>최대 피크 = 상면 층 깊이"]
-  B --> C["층 마스크 (±40mm)"]
-  A --> D["강도(I) 채널 Canny 에지<br/>= 박스 이음새 (D와 픽셀 정합)"]
-  C --> E["마스크 − 에지 → 연결요소"]
+  A["ToF 프레임 X·Y·D·I (mm)"] --> B["중앙 ROI 깊이 히스토그램<br/>후보 피크 최대 8개"]
+  B --> C["층 마스크 (±40mm) + 깊이 그래디언트 필터"]
+  A --> D["강도(I) 채널 Canny 에지<br/>= 박스 이음새 (D 와 픽셀 정합)"]
+  C --> E["마스크 − 에지 → 연결요소<br/>(유효 픽셀만 — 센티넬 오염 방지)"]
   D --> E
-  E --> F["직사각형성·종횡비 필터"]
-  F --> G["X/Y 좌표맵(mm) minAreaRect<br/>→ 실측 치수 L×W"]
-  F --> H["박스별 3D 평면 피팅(SVD)<br/>→ 픽포인트: 중심+법선+기울기"]
-  H --> I["기준 레이아웃 슬롯 매칭<br/>→ 세션 차분 = 실제 픽 순서"]
+  E --> F["직사각형성·종횡비 필터 → X/Y mm 맵 minAreaRect 치수"]
+  F --> G["박스별 신뢰도<br/>충전율·평면 RMS·직사각형성·SKU 부합"]
+  G --> H["층 선택: 신뢰 박스가 있는 층 중 최근접"]
+  H --> I["격자(방향·치수·피치) 추정 → 결손 셀 보완 'inferred'"]
+  I --> J["평면 피팅 → 중심·법선·기울기 (pose.py)<br/>T_base_cam → 6-DoF 픽 포즈"]
+  J --> K["runtime.decide(): OK / RETAKE / LOW_CONFIDENCE / LAYER_EMPTY / NO_SURFACE"]
 ```
 
-## 3. 이적재 사이클 — 데이터로 복원·검증된 흐름
+## 3. 좌표계
+
+| 프레임 | 정의 | 어디서 |
+|---|---|---|
+| `tof_optical` | 카메라 광학. x 오른쪽, y 아래, z 전방(깊이). 실측 `.mim` 의 X/Y/D 와 동일 | `frame.py`, ROS `/tof/points` |
+| `base_link` | 로봇 베이스. `T_base_cam`(4×4, mm)으로 변환. 기본값은 탑다운 설치 예시 (카메라 높이 4.183 m, R = diag(1,−1,−1)) | `pose.py`, ROS TF static |
+| 트윈 월드 | MuJoCo. `ToF_X = world_X`, `ToF_Y = −world_Y`, `ToF_D = CAM_H − world_Z` | `sim/cell_twin.py` |
+
+실제 `T_base_cam` 값은 핸드아이 캘리브레이션이 필요하다(하드웨어). 값이 틀리면 픽 포즈가 통째로 밀리므로
+`runtime.HealthMonitor` 가 정적 배경 깊이 편차로 드리프트를 감시한다.
+
+## 4. ROS2 그래프 — `ros2_ws/src/robotsim_perception_ros`
 
 ```mermaid
 flowchart LR
-  S["소스 팔레트<br/>(박스 12→3개 감소)"] -- "① PICK NEXT<br/>최소 동선 박스 선택" --> R["로봇 이송<br/>(동선 mm 산출)"]
-  R -- "② PLACE<br/>PPO 배치 제안" --> DST["목적지 스택<br/>(770→1260mm 성장)"]
-  DST -- "만재 시 반출 (높이 0 복귀)" --> OUT["완성 팔레트"]
-  GT["세션 시계열<br/>(30 캡처)"] -. "검증: 실제 픽 순위 평균 1.69<br/>스택 성장 계단 = 질량 보존" .-> S
-```
-
-## 4. 학습 인프라 (RTX 3080 10GB ×2)
-
-```mermaid
-flowchart TD
-  subgraph GPU0["GPU 0"]
-    P["LeRobot PushT Diffusion 263M<br/>(파이프라인 검증용)"]
-  end
-  subgraph GPU1["GPU 1"]
-    S1["팔레타이징 MaskablePPO ✅ 완료"] --> S2["SmolVLA-450M 파인튜닝<br/>BS2, VRAM 피크 4.7GB"]
-  end
-  M["Monitor 감시<br/>(마일스톤·에러·완료 알림)"] --- GPU0
-  M --- GPU1
-  N["교훈: torch 2.9+ Win 리그레션→2.8 고정<br/>심링크 폴백 패치, extras 일괄 설치"] -.-> M
+  SRC["source<br/>synthetic | .mim 재생<br/>(실셀: 센서 드라이버)"] --> N["perception_node<br/>decide() + HealthMonitor"]
+  N -->|PointCloud2| P["/tof/points"]
+  N -->|MarkerArray| M["/perception/boxes"]
+  N -->|PoseArray base_link| Q["/perception/pick_poses"]
+  N -->|String JSON| S["/perception/status"]
+  N -->|DiagnosticArray| D["/diagnostics"]
+  N -.->|TF static| T["base_link → tof_optical"]
+  PLC["시퀀서 / PLC 역할"] -->|std_srvs/Trigger| N
+  P --> R["rviz2"]
+  M --> R
+  Q --> R
+  Q --> X["pick_executor<br/>(docs/42 실습 과제 — 직접 작성)"]
 ```

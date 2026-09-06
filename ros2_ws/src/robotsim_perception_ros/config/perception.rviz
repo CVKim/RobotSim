@@ -1,0 +1,118 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Boxes1
+        - /Boxes1/Status1
+        - /Pick poses1
+    Tree Height: 700
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Enabled: true
+      Name: Grid
+      Cell Size: 0.25
+      Plane: XY
+      Plane Cell Count: 16
+      Color: 110; 110; 110
+      Reference Frame: <Fixed Frame>
+    - Class: rviz_default_plugins/TF
+      Enabled: true
+      Name: TF
+      Show Names: true
+      Show Axes: true
+      Show Arrows: false
+      Marker Scale: 0.6
+      Frame Timeout: 15
+    - Class: rviz_default_plugins/PointCloud2
+      Enabled: true
+      Name: ToF points
+      Topic:
+        Value: /tof/points
+        Depth: 1
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+      Color Transformer: FlatColor
+      Color: 170; 178; 190
+      Position Transformer: XYZ
+      Style: Flat Squares
+      Size (m): 0.012
+      Alpha: 0.35
+      Decay Time: 0
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Boxes
+      Topic:
+        Value: /perception/boxes
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+      Namespaces:
+        boxes: true
+        boxes_label: true
+        boxes_next: true
+    - Class: rviz_default_plugins/PoseArray
+      Enabled: true
+      Name: Pick poses
+      Topic:
+        Value: /perception/pick_poses
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+      Shape: Axes
+      Axes Length: 0.12
+      Axes Radius: 0.012
+    - Class: rviz_default_plugins/Pose
+      Enabled: true
+      Name: Next pick
+      Topic:
+        Value: /perception/next_pick
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+      Shape: Arrow
+      Color: 40; 140; 255
+      Shaft Length: 0.15
+      Shaft Radius: 0.02
+      Head Length: 0.06
+      Head Radius: 0.04
+  Enabled: true
+  Global Options:
+    Background Color: 34; 36; 40
+    Fixed Frame: base_link
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Name: Current View
+      Distance: 2.3
+      Focal Point:
+        X: -0.1
+        Y: 0.0
+        Z: 1.2
+      Pitch: 1.05
+      Yaw: 0.7
+      Near Clip Distance: 0.01
+      Target Frame: <Fixed Frame>
+    Saved: ~
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 1000
+  Width: 1600
+  X: 0
+  Y: 0

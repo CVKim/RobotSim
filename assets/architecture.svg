@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="600" viewBox="0 0 1180 600" font-family='"Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif'>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4b5563"/></marker></defs>
+<rect width="1180" height="600" fill="#ffffff"/>
+<text x="30" y="36" font-size="17" font-weight="700" fill="#111827">Robot_Sim — 실측 ToF → 인식 패키지 → 로봇 좌표 → 셀 트윈 폐루프 → ROS2</text>
+<rect x="30" y="60" width="250" height="165" rx="9" fill="#f7f8fa" stroke="#9aa3ad" stroke-width="1.5"/>
+<text x="42" y="81" font-size="13" font-weight="700" fill="#1f2937">실데이터 (비공개, 로컬 전용)</text>
+<text x="42" y="106" font-size="12" fill="#1f2937">ToF .mim  X/Y/D/I · 640×480 · mm</text>
+<text x="42" y="125" font-size="12" fill="#1f2937">30프레임 · 단일 SKU 293×219×283</text>
+<text x="42" y="144" font-size="12" fill="#1f2937">RGB 5MP — 육안 대조에만 사용</text>
+<text x="42" y="163" font-size="12" fill="#1f2937">노이즈 실측 σ(mm) = 180.3·I^−0.805</text>
+<rect x="30" y="255" width="250" height="200" rx="9" fill="#f7f8fa" stroke="#9aa3ad" stroke-width="1.5"/>
+<text x="42" y="276" font-size="13" font-weight="700" fill="#1f2937">학습 · 시뮬레이션</text>
+<text x="42" y="301" font-size="12" fill="#1f2937">sim2real  0.00 → 0.43 → 0.99 (mAP50)</text>
+<text x="42" y="320" font-size="12" fill="#1f2937">YOLO11n-seg 0.99 · 무효 15%↑ 붕괴</text>
+<text x="42" y="339" font-size="12" fill="#1f2937">RL MaskablePPO 64.7±0.3 (+14.3%)</text>
+<text x="42" y="358" font-size="12" fill="#1f2937">   mask 제거 43.2 &lt; 휴리스틱 56.6</text>
+<text x="42" y="377" font-size="12" fill="#1f2937">BC/DART 100% · SmolVLA VRAM 4.7GB</text>
+<rect x="350" y="60" width="440" height="340" rx="9" fill="#f7f8fa" stroke="#9aa3ad" stroke-width="1.5"/>
+<text x="362" y="81" font-size="13" font-weight="700" fill="#1f2937">인식 패키지  robotsim_perception  (numpy / opencv)</text>
+<rect x="362" y="95" width="205" height="135" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="372" y="114" font-size="12.5" font-weight="700" fill="#111827">geometry.py — 검출</text>
+<text x="372" y="135" font-size="11.5" fill="#374151">층 깊이 히스토그램</text>
+<text x="372" y="152" font-size="11.5" fill="#374151">I-채널 에지로 이음새 분리</text>
+<text x="372" y="169" font-size="11.5" fill="#374151">X/Y mm 맵 minAreaRect 치수</text>
+<text x="372" y="186" font-size="11.5" fill="#374151">v2 격자 보완·층 선택 → 167/167</text>
+<rect x="577" y="95" width="205" height="135" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="587" y="114" font-size="12.5" font-weight="700" fill="#111827">pose.py — 로봇 좌표</text>
+<text x="587" y="135" font-size="11.5" fill="#374151">평면 피팅: 중심·법선·기울기</text>
+<text x="587" y="152" font-size="11.5" fill="#374151">T_base_cam (4×4) → base_link</text>
+<text x="587" y="169" font-size="11.5" fill="#374151">6-DoF 픽 포즈: 접근·yaw·pre/post</text>
+<text x="587" y="186" font-size="11.5" fill="#374151">석션 풋프린트 판정</text>
+<rect x="362" y="250" width="205" height="135" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="372" y="269" font-size="12.5" font-weight="700" fill="#111827">runtime.py — 판정</text>
+<text x="372" y="290" font-size="11.5" fill="#374151">OK / RETAKE / LOW_CONFIDENCE</text>
+<text x="372" y="307" font-size="11.5" fill="#374151">LAYER_EMPTY / NO_SURFACE</text>
+<text x="372" y="324" font-size="11.5" fill="#374151">임계 JSON 외부화</text>
+<text x="372" y="341" font-size="11.5" fill="#374151">드리프트 감시 (정적 배경)</text>
+<rect x="577" y="250" width="205" height="135" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="587" y="269" font-size="12.5" font-weight="700" fill="#111827">planner.py — 픽 순서</text>
+<text x="587" y="290" font-size="11.5" fill="#374151">열 스캔 규칙 (실제 81% 일치)</text>
+<text x="587" y="307" font-size="11.5" fill="#374151">JSON 스키마 1.0 · CLI</text>
+<text x="587" y="324" font-size="11.5" fill="#374151">지연 v1 52 ms / v2 340 ms</text>
+<text x="587" y="341" font-size="11.5" fill="#374151">pytest 37 (34개 합성만으로)</text>
+<rect x="350" y="430" width="440" height="140" rx="9" fill="#eef5ff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="362" y="451" font-size="13" font-weight="700" fill="#1d4ed8">ROS2 Humble (WSL2)  perception_node — 신규</text>
+<text x="362" y="476" font-size="12" fill="#1f2937">/tof/points PointCloud2 · TF base_link → tof_optical</text>
+<text x="362" y="495" font-size="12" fill="#1f2937">/perception/boxes MarkerArray · /perception/pick_poses PoseArray</text>
+<text x="362" y="514" font-size="12" fill="#1f2937">/perception/status JSON · /diagnostics · ~/capture Trigger</text>
+<text x="362" y="533" font-size="12" fill="#1f2937">rviz2 설정 · launch · 합성 소스 → 회사 데이터 없이 실행</text>
+<rect x="860" y="60" width="300" height="160" rx="9" fill="#f7f8fa" stroke="#9aa3ad" stroke-width="1.5"/>
+<text x="872" y="81" font-size="13" font-weight="700" fill="#1f2937">MuJoCo 셀 디지털 트윈</text>
+<text x="872" y="106" font-size="12" fill="#1f2937">실측 역산 지오메트리 (2970 vs 2973 mm)</text>
+<text x="872" y="125" font-size="12" fill="#1f2937">절대 정답: 중심오차 8.5 / 9.8 mm</text>
+<text x="872" y="144" font-size="12" fill="#1f2937">폐루프  oracle 100%  ·  인식 구동 46.7%</text>
+<text x="872" y="163" font-size="12" fill="#1f2937">사이클 11.7 s/픽 (인식 지연 3%)</text>
+<rect x="860" y="250" width="300" height="150" rx="9" fill="#f7f8fa" stroke="#9aa3ad" stroke-width="1.5"/>
+<text x="872" y="271" font-size="13" font-weight="700" fill="#1f2937">검증</text>
+<text x="872" y="296" font-size="12" fill="#1f2937">30세션 전체 파리티  v1 152 / v2 167</text>
+<text x="872" y="315" font-size="12" fill="#1f2937">교란 격자 3시드 · 부트스트랩 95% CI</text>
+<text x="872" y="334" font-size="12" fill="#1f2937">찾은 결함 5건 수정 · 기각 시도 2건 기록</text>
+<text x="872" y="353" font-size="12" fill="#1f2937">트윈 자체 결함 2건 실측 대조로 판정</text>
+<rect x="860" y="430" width="300" height="140" rx="9" fill="#fff5f5" stroke="#d93025" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="872" y="451" font-size="13" font-weight="700" fill="#b91c1c">미구현 — 하드웨어 · 데이터 필요</text>
+<text x="872" y="476" font-size="12" fill="#1f2937">핸드아이 외참 실측값 · 팔 IK / 충돌</text>
+<text x="872" y="495" font-size="12" fill="#1f2937">줄자 GT · 혼합 SKU · 다른 조명</text>
+<text x="872" y="514" font-size="12" fill="#1f2937">잔여 ≤3개 층 선택 실패 모드</text>
+<text x="872" y="533" font-size="12" fill="#1f2937">실로봇 연결 (여기까지는 시뮬·재생)</text>
+<line x1="280" y1="140" x2="350" y2="140" stroke="#4b5563" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="315.0" y="133.0" font-size="10" fill="#374151" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="4">X/Y/D/I mm</text>
+<line x1="155" y1="225" x2="155" y2="255" stroke="#4b5563" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="163.0" y="244.0" font-size="10" fill="#374151" text-anchor="start" paint-order="stroke" stroke="#ffffff" stroke-width="4">σ(I) · 치수 시드</text>
+<line x1="790" y1="115" x2="860" y2="115" stroke="#4b5563" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="825.0" y="108.0" font-size="10" fill="#374151" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="4">6-DoF 포즈</text>
+<line x1="860" y1="170" x2="790" y2="170" stroke="#4b5563" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="825.0" y="163.0" font-size="10" fill="#374151" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="4">렌더 + 정답</text>
+<line x1="790" y1="325" x2="860" y2="325" stroke="#4b5563" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="825.0" y="318.0" font-size="10" fill="#374151" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="4">파리티·강건성</text>
+<line x1="570" y1="400" x2="570" y2="430" stroke="#4b5563" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="578.0" y="419.0" font-size="10" fill="#374151" text-anchor="start" paint-order="stroke" stroke="#ffffff" stroke-width="4">Box · PickPose · Decision</text>
+<line x1="280" y1="350" x2="350" y2="350" stroke="#4b5563" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#ah)"/>
+<text x="315.0" y="343.0" font-size="10" fill="#374151" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="4">seg 대안</text>
+<line x1="790" y1="500" x2="860" y2="500" stroke="#4b5563" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#ah)"/>
+<text x="825.0" y="493.0" font-size="10" fill="#374151" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="4">실로봇 시</text>
+</svg>

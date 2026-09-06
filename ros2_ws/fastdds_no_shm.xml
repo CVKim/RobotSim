@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  WSL2 에서 Fast DDS 의 공유메모리(SHM) 전송이 "Failed init_port ... open_and_lock_file failed" 로 실패해
+  같은 머신의 노드끼리도 통신이 안 되는 경우가 있다. UDPv4 만 쓰도록 강제하는 프로필.
+    export FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/e/Robot_Sim/ros2_ws/fastdds_no_shm.xml
+-->
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <transport_descriptors>
+    <transport_descriptor>
+      <transport_id>udp_only</transport_id>
+      <type>UDPv4</type>
+    </transport_descriptor>
+  </transport_descriptors>
+  <participant profile_name="udp_only_participant" is_default_profile="true">
+    <rtps>
+      <userTransports>
+        <transport_id>udp_only</transport_id>
+      </userTransports>
+      <useBuiltinTransports>false</useBuiltinTransports>
+    </rtps>
+  </participant>
+</profiles>

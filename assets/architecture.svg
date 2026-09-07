@@ -46,7 +46,7 @@
 <text x="362" y="476" font-size="12" fill="#1f2937">perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)</text>
 <text x="362" y="495" font-size="12" fill="#1f2937">pick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기</text>
 <text x="362" y="514" font-size="12" fill="#1f2937">cart_node: hook_pose · 동적 TF  ·  twin_bridge: 트윈 = 로봇·카메라 (TCP)</text>
-<text x="362" y="533" font-size="12" fill="#1f2937">status JSON · /diagnostics · rviz2 · launch · colcon test 35</text>
+<text x="362" y="533" font-size="12" fill="#1f2937">status JSON · rviz2 · launch_testing 통합 · ros2 bag · colcon test 37</text>
 <rect x="860" y="60" width="300" height="160" rx="9" fill="#f7f8fa" stroke="#9aa3ad" stroke-width="1.5"/>
 <text x="872" y="81" font-size="13" font-weight="700" fill="#1f2937">MuJoCo 셀 디지털 트윈</text>
 <text x="872" y="106" font-size="12" fill="#1f2937">실측 역산 지오메트리 (2970 vs 2973 mm)</text>

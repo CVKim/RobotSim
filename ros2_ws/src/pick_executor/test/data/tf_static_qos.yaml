@@ -1,0 +1,5 @@
+# ros2 bag record 용 QoS 재정의: /tf_static 은 transient_local 로 나오므로 기록기도 그렇게 구독해야 늦게 붙어도 받는다.
+/tf_static:
+  history: keep_all
+  reliability: reliable
+  durability: transient_local

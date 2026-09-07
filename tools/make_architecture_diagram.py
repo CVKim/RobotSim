@@ -66,7 +66,7 @@ GROUPS = [
         "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)",
         "pick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기",
         "cart_node: hook_pose · 동적 TF  ·  twin_bridge: 트윈 = 로봇·카메라 (TCP)",
-        "status JSON · /diagnostics · rviz2 · launch · colcon test 35",
+        "status JSON · rviz2 · launch_testing 통합 · ros2 bag · colcon test 37",
     ]),
     dict(id="twin", title="MuJoCo 셀 디지털 트윈", x=860, y=60, w=300, h=160, style="normal", lines=[
         "실측 역산 지오메트리 (2970 vs 2973 mm)",

@@ -16,7 +16,8 @@
 | 퍼블리시 | `/robot/target_poses` 3점(pre-pick → pick → lift, 같은 툴 자세), `/robot/trajectory` 마커, `/pick_executor/state` 상태·카운터 |
 | 서비스 클라이언트 | `/robotsim_perception/capture` — `trigger_capture:=true` 일 때 실행 완료마다 호출 |
 | 파라미터 | `min_dist_m` 0.05 (직전 pick 과 이 안이면 같은 장면 → 보내지 않음), `clearance_m` 0.15, `lift_m` 0.25, `execute_time_s` 2.0, `stop_on_empty` true, `empty_retries` 2 (LAYER_EMPTY 연속 3번이면 DONE), `watchdog_s` 10, `done_topic` '' (비어 있지 않으면 이 토픽의 로봇 완료 보고 `{"ok","result",…}` 로 실행을 끝냄 — 트윈 브리지가 `/robot/execution_result` 로 냄; 박스 쪽 실패로 보고된 pick 은 막아 두고 다음 후보로, 전송 오류는 같은 명령 재시도), `execute_timeout_s` 120, `max_no_progress` 12 (명령을 못 낸 프레임이 연속 이만큼이면 DONE) |
-| 판단 로직 | `pick_executor/logic.py` — ROS 없이 pytest 13건 (`test/test_logic.py`). 실행 중 새 프레임은 busy 로 무시, 스탬프로 poses/status 짝 맞춤, 0 쿼터니언 거부 |
+| 판단 로직 | `pick_executor/logic.py` — ROS 없이 pytest 19건 (`test/test_logic.py`). 실행 중 새 프레임은 busy 로 무시, 스탬프로 poses/status 짝 맞춤, 0 쿼터니언 거부, 로봇 실패 후보 차단, 무진전 종료 |
+| 통합 테스트 | `test/test_pick_cycle_launch.py`(인식 노드 + 이 노드를 띄워 12 명령·DONE), `test_bag_replay_launch.py`(기록된 bag 재생 → OK 프레임마다 명령 1), `test_twin_cycle_launch.py`(트윈 서버 있을 때) — launch_testing, `colcon test` 가 돌린다 (docs/42 6-d) |
 
 접근 방향은 포즈 쿼터니언에서 툴 +Z 축을 꺼낸다(인식 노드 규약: 툴 +Z = 접근). 탑다운이면 pre-pick 은 pick 의 15 cm 위, lift 는 40 cm 위.
 

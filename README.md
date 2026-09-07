@@ -24,14 +24,14 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 | sim2real / 학습 세그 | 합성 전용 0.00 → 노이즈 시뮬 0.43 → +실측 6장 0.99 · seg mAP50 0.99(무효 15%↑ 붕괴) | [상세 §4](docs/30_결과_상세.md#4-합성데이터-sim2real) · §6 |
 | 팔레타이징 RL (3시드) | MaskablePPO 64.7±0.3 vs 휴리스틱 56.6 (+14.3%) · mask 제거 43.2 | [상세 §3](docs/30_결과_상세.md#3-팔레타이징-강화학습) · `results/palletize_multiseed.json` |
 | 모방학습 · VLA | DART BC 100% (가상 Franka) · SmolVLA 파인튜닝 VRAM 4.7 GB | [상세 §5](docs/30_결과_상세.md#5-가상환경-제어모방학습-mujoco-franka) |
-| 테스트 | pytest **61** (46개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · colcon test 35 | `tests/` · `ros2_ws/.../test/` |
+| 테스트 | pytest **61** (46개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · colcon test 37 (launch_testing 통합 2 · bag 재생) | `tests/` · `ros2_ws/.../test/` |
 
 ## 구성
 
 | 영역 | 무엇 | 어디 |
 |---|---|---|
 | 인식 패키지 | 검출(geometry) · 로봇 좌표/6-DoF 포즈(pose) · 판정 상태·드리프트(runtime) · 픽 순서(planner) · CLI/JSON | [`robotsim_perception/`](robotsim_perception/) · [docs/40](docs/40_패키지_사용법.md) |
-| ROS2 (Humble, WSL2) | 노드 4개 — `perception_node`(빈피킹: PoseArray base_link · 정적 TF) · `cart_node`(대차: 동적 TF tof_optical→cart · 도킹 목표 포즈) · `pick_executor`(3점 로봇 명령 · 재촬영 서비스 호출 · 로봇 완료 보고 대기) · `twin_bridge`(MuJoCo 트윈을 로봇 드라이버·카메라 자리에 연결) · rviz2 · colcon test 35 | [`ros2_ws/`](ros2_ws/src/) · [docs/42](docs/42_ROS2_핸즈온.md) |
+| ROS2 (Humble, WSL2) | 노드 4개 — `perception_node`(빈피킹: PoseArray base_link · 정적 TF) · `cart_node`(대차: 동적 TF tof_optical→cart · 도킹 목표 포즈) · `pick_executor`(3점 로봇 명령 · 재촬영 서비스 호출 · 로봇 완료 보고 대기) · `twin_bridge`(MuJoCo 트윈을 로봇 드라이버·카메라 자리에 연결) · rviz2 · launch_testing 통합 테스트 · ros2 bag 기록/재생 · colcon test 37 | [`ros2_ws/`](ros2_ws/src/) · [docs/42](docs/42_ROS2_핸즈온.md) |
 | 셀 디지털 트윈 | 실측 역산 지오메트리 MJCF · 절대 정답 평가 · 인식 구동 픽/플레이스 폐루프 · UR10e 팔(IK·충돌·관절 속도) 도달 분석 | [`sim/`](sim/) · [docs/41](docs/41_셀_트윈.md) |
 | 학습 · 시뮬 | BlenderProc/Isaac SDG · YOLO det/seg · MaskablePPO · BC/DART · SmolVLA · 로컬 VLM | [`tools/`](tools/) |
 | 검증 · 재현 | 교란 벤치 · 트윈 평가 · 전 세션 파리티 · 집계 JSON 공개 | [`tests/`](tests/) · [`results/`](results/) · [docs/21 실험로그](docs/21_실험로그.md) |

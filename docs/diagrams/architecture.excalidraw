@@ -847,14 +847,14 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)\npick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기\ncart_node: hook_pose · 동적 TF  ·  twin_bridge: 트윈 = 로봇·카메라 (TCP)\nstatus JSON · /diagnostics · rviz2 · launch · colcon test 35",
+   "text": "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)\npick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기\ncart_node: hook_pose · 동적 TF  ·  twin_bridge: 트윈 = 로봇·카메라 (TCP)\nstatus JSON · rviz2 · launch_testing 통합 · ros2 bag · colcon test 37",
    "fontSize": 13,
    "fontFamily": 1,
    "textAlign": "left",
    "verticalAlign": "top",
    "baseline": 13,
    "containerId": null,
-   "originalText": "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)\npick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기\ncart_node: hook_pose · 동적 TF  ·  twin_bridge: 트윈 = 로봇·카메라 (TCP)\nstatus JSON · /diagnostics · rviz2 · launch · colcon test 35",
+   "originalText": "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)\npick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기\ncart_node: hook_pose · 동적 TF  ·  twin_bridge: 트윈 = 로봇·카메라 (TCP)\nstatus JSON · rviz2 · launch_testing 통합 · ros2 bag · colcon test 37",
    "lineHeight": 1.25
   },
   {

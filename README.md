@@ -20,18 +20,18 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 | 팔 도달·충돌 (UR10e, 트윈) | 실측 픽 포즈 167개: 고정 받침대 도달 87% → **리니어 트랙 100%**, 하강·접근 무충돌 99~100%, 순수 이동 3.1 s/픽 | [상세 §10](docs/30_결과_상세.md#10-팔-도달충돌사이클--ur10e-를-트윈에-세우다) · `results/twin_arm_reach.json` |
 | 강건성 (교란 격자, 3시드) | 대면적 결손 30개에서 위치 일치 리콜 v1 57% → v2 74% | 상세 §하단 표 · `results/detector_robustness.json` |
 | ToF 노이즈 모델 | σ(mm) = 180.3 · I^−0.805 (정적 픽셀 12.7만) | [상세 §2](docs/30_결과_상세.md#2-tof-깊이-노이즈-특성-분석) |
-| 대차 후크 반복성 | 데크 ICP 정렬로 22.7 → **3.2 mm** | [상세 §7](docs/30_결과_상세.md#7-대차-후크-위치-반복성-3d-정합) |
+| 대차 후크 반복성 · 도킹 | 데크 ICP 정렬로 22.7 → **3.2 mm** · 고리 포즈로 AGV 도킹 폐루프(시뮬) 27/30, 평균 9.1 s, 최종 오차 측방 3.0 mm | [상세 §7](docs/30_결과_상세.md#7-대차-후크-위치-반복성-3d-정합) · [docs/42 8-b](docs/42_ROS2_핸즈온.md) · `results/cart_dock.json` |
 | sim2real / 학습 세그 | 합성 전용 0.00 → 노이즈 시뮬 0.43 → +실측 6장 0.99 · seg mAP50 0.99(무효 15%↑ 붕괴) | [상세 §4](docs/30_결과_상세.md#4-합성데이터-sim2real) · §6 |
 | 팔레타이징 RL (3시드) | MaskablePPO 64.7±0.3 vs 휴리스틱 56.6 (+14.3%) · mask 제거 43.2 | [상세 §3](docs/30_결과_상세.md#3-팔레타이징-강화학습) · `results/palletize_multiseed.json` |
 | 모방학습 · VLA | DART BC 100% (가상 Franka) · SmolVLA 파인튜닝 VRAM 4.7 GB | [상세 §5](docs/30_결과_상세.md#5-가상환경-제어모방학습-mujoco-franka) |
-| 테스트 | pytest **65** (46개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · colcon test 37 (launch_testing 통합 2 · bag 재생) | `tests/` · `ros2_ws/.../test/` |
+| 테스트 | pytest **75** (69개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · colcon test 38 (launch_testing 통합 4 · bag 재생) | `tests/` · `ros2_ws/.../test/` |
 
 ## 구성
 
 | 영역 | 무엇 | 어디 |
 |---|---|---|
 | 인식 패키지 | 검출(geometry) · 로봇 좌표/6-DoF 포즈(pose) · 판정 상태·드리프트(runtime) · 픽 순서(planner) · CLI/JSON | [`robotsim_perception/`](robotsim_perception/) · [docs/40](docs/40_패키지_사용법.md) |
-| ROS2 (Humble, WSL2) | 노드 4개 — `perception_node`(빈피킹: PoseArray base_link · 정적 TF) · `cart_node`(대차: 동적 TF tof_optical→cart · 도킹 목표 포즈) · `pick_executor`(3점 로봇 명령 · 재촬영 서비스 호출 · 로봇 완료 보고 대기) · `twin_bridge`(MuJoCo 트윈을 로봇 드라이버·카메라 자리에 연결) · rviz2 · launch_testing 통합 테스트 · ros2 bag 기록/재생 · colcon test 37 | [`ros2_ws/`](ros2_ws/src/) · [docs/42](docs/42_ROS2_핸즈온.md) |
+| ROS2 (Humble, WSL2) | 노드 6개 — `perception_node`(빈피킹: PoseArray base_link · 정적 TF) · `cart_node`(대차: 동적 TF tof_optical→cart · 도킹 목표 포즈) · `pick_executor`(3점 로봇 명령 · 재촬영 서비스 호출 · 로봇 완료 보고 대기) · `twin_bridge`(MuJoCo 트윈을 로봇 드라이버·카메라 자리에 연결) · `dock_node`+`agv_sim_node`(고리 포즈 → AGV 도킹, stop-and-go) · rviz2 · launch_testing 통합 테스트 · ros2 bag 기록/재생 · colcon test 38 | [`ros2_ws/`](ros2_ws/src/) · [docs/42](docs/42_ROS2_핸즈온.md) |
 | 셀 디지털 트윈 | 실측 역산 지오메트리 MJCF · 절대 정답 평가 · 인식 구동 픽/플레이스 폐루프 · UR10e 팔(IK·충돌·관절 속도) 도달 분석 | [`sim/`](sim/) · [docs/41](docs/41_셀_트윈.md) |
 | 학습 · 시뮬 | BlenderProc/Isaac SDG · YOLO det/seg · MaskablePPO · BC/DART · SmolVLA · 로컬 VLM | [`tools/`](tools/) |
 | 검증 · 재현 | 교란 벤치 · 트윈 평가 · 전 세션 파리티 · 집계 JSON 공개 | [`tests/`](tests/) · [`results/`](results/) · [docs/21 실험로그](docs/21_실험로그.md) |
@@ -57,6 +57,14 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 
 *화면 설명: 고정 프레임이 대차라 데크가 수평으로 보인다. 파란 판이 데크 평면, 자홍 선이 데크 앞 테두리(림, 대차 좌표의 v'=0),
 노란 선이 레일 안쪽 벽(u'=0 과 u'=레일 간격), 초록 기둥이 고리, 위쪽의 축이 카메라 위치다. 카메라 높이가 바뀌어도 고리는 대차 좌표에서 같은 자리에 잡힌다.*
+
+이 고리 포즈를 **쓰는 쪽**으로 `dock_node` 와 `agv_sim_node` 를 더했다. 차동 구동 AGV(운동학 시뮬)가 인식한 고리를 향해 다가가 결합 위치에 서는
+폐루프로, 시작 30회 중 27회 결합(평균 9.1 s, 최종 측방 오차 3.0 mm). 연속 주행에서는 인식 지연 때문에 요가 발산해 '멈추고 찍고 움직이는'
+stop-and-go 로 바꿨다 — 저속 도킹에서 측정과 구동을 동기화하는 이유를 직접 겪은 사례다([docs/42 8-b](docs/42_ROS2_핸즈온.md)).
+
+![dock](assets/cart_dock.png)
+
+*화면 설명: 왼쪽은 인식 구동 30회의 궤적(AGV 기준 고리 위치, 별 = 결합 위치), 가운데는 결합 판정 시점의 실제 오차(점선 = 판정 허용치), 오른쪽은 도킹 시간이다.*
 
 세 번째 노드 `pick_executor` 는 인식 결과를 **받는 쪽**이다. 픽 포즈를 pre-pick, pick, lift 세 점의 로봇 명령으로 바꿔
 `/robot/target_poses` 로 내고, 실행이 끝나면 인식 노드의 촬영 서비스를 호출해 다음 프레임을 받는다. 합성 12박스 장면을
@@ -98,10 +106,10 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 | [docs/40_패키지_사용법.md](docs/40_패키지_사용법.md) | 인식 패키지 CLI·API·JSON 스키마·테스트 |
 | [docs/41_셀_트윈.md](docs/41_셀_트윈.md) | 트윈 구성 · 찾은 결함 · **검증하지 않는 것** |
 | [docs/42_ROS2_핸즈온.md](docs/42_ROS2_핸즈온.md) | ROS2 빌드·실행·CLI 탐색·실습 과제 |
-| [docs/21_실험로그.md](docs/21_실험로그.md) | 실험 64건 시간순 (기각한 시도 포함) |
+| [docs/21_실험로그.md](docs/21_실험로그.md) | 실험 65건 시간순 (기각한 시도 포함) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 다이어그램 + 검출 파이프라인 상세 |
 | [docs/00](docs/00_하드웨어_판정.md) · [02](docs/02_환경_셋업.md) · [03](docs/03_공개전략_및_데이터보안.md) | 하드웨어 판정 · 환경 셋업 · 데이터 보안 정책 |
-| [results/](results/) | README 수치의 원본 JSON 23종 (세션 ID 익명화) |
+| [results/](results/) | README 수치의 원본 JSON 24종 (세션 ID 익명화) |
 
 ## 빠른 시작
 

@@ -62,11 +62,11 @@ GROUPS = [
             "pytest 51 (46개 합성만으로)",
         ]),
     ]),
-    dict(id="ros", title="ROS2 Humble (WSL2)  노드 4개: 인식 · 대차 · 제어 · 트윈 브리지 — 신규", x=350, y=430, w=440, h=140, style="new", lines=[
+    dict(id="ros", title="ROS2 Humble (WSL2)  노드 6개: 인식 · 대차 · 제어 · 트윈 브리지 · 도킹 — 신규", x=350, y=430, w=440, h=140, style="new", lines=[
         "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)",
         "pick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기",
-        "cart_node: hook_pose · 동적 TF  ·  twin_bridge: 트윈 = 로봇·카메라 (TCP)",
-        "status JSON · rviz2 · launch_testing 통합 · ros2 bag · colcon test 37",
+        "cart_node: hook_pose · 동적 TF → dock_node+agv_sim 도킹  ·  twin_bridge: 트윈 (TCP)",
+        "status JSON · rviz2 · launch_testing 통합 4 · ros2 bag · colcon test 38",
     ]),
     dict(id="twin", title="MuJoCo 셀 디지털 트윈", x=860, y=60, w=300, h=160, style="normal", lines=[
         "실측 역산 지오메트리 (2970 vs 2973 mm)",

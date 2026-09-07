@@ -14,7 +14,7 @@
     ~/capture          std_srvs/Trigger              프레임 1장 즉시 처리
 
   파라미터
-    source        'synthetic' | 세션 폴더(상위 폴더면 순서대로 재생, 로컬 전용)
+    source        'synthetic' | 'synthetic_dock' (AGV 시뮬 포즈로 렌더, /agv/rel_pose 구독) | 세션 폴더(상위 폴더면 순서대로 재생, 로컬 전용)
     rate_hz       주기 (0 이면 트리거만)   loop   seed   cloud_stride   publish_cloud
     camera_frame  'tof_optical'   cart_frame 'cart'
     extrinsics_json  있으면 base_link -> tof_optical 정적 TF 도 낸다 (실측값은 핸드아이 캘리브레이션 필요)
@@ -24,6 +24,7 @@
 """
 from __future__ import annotations
 
+import json
 import time
 
 import rclpy
@@ -70,6 +71,9 @@ class CartNode(Node):
         self.pub_status = self.create_publisher(String, "/cart/status", 10)
         self.pub_diag = self.create_publisher(DiagnosticArray, "/diagnostics", 10)
         self.srv = self.create_service(Trigger, "~/capture", self.on_capture)
+        # 도킹 시뮬: AGV 시뮬이 주는 상대 포즈로 합성 장면을 렌더한다 (sources.DockingCartSource)
+        self.sub_agv = (self.create_subscription(String, "/agv/rel_pose", self.on_agv_pose, 10)
+                        if hasattr(self.source, "set_pose") else None)
         self.tf = TransformBroadcaster(self)
         if ext:
             self.tf_static = StaticTransformBroadcaster(self)
@@ -110,6 +114,13 @@ class CartNode(Node):
                f"yaw={res.cart.get('rim_yaw_deg', 0):+.2f} " if hc else f"({res.reason}) ")
             + f"valid={res.valid_frac:.0%} {(time.perf_counter() - t0) * 1e3:.0f} ms")
         return res
+
+    def on_agv_pose(self, msg: String):
+        try:
+            d = json.loads(msg.data)
+            self.source.set_pose(d["hook_u_mm"], d["rim_v_mm"], d["yaw_deg"])
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            self.get_logger().warn(f"bad /agv/rel_pose: {e}")
 
     def on_capture(self, request, response):
         res = self.process()

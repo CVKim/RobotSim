@@ -27,6 +27,8 @@ setup(
         "console_scripts": [
             "perception_node = robotsim_perception_ros.perception_node:main",
             "cart_node = robotsim_perception_ros.cart_node:main",
+            "dock_node = robotsim_perception_ros.dock_node:main",
+            "agv_sim_node = robotsim_perception_ros.agv_sim_node:main",
         ],
     },
 )

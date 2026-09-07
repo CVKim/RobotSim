@@ -797,7 +797,7 @@
    "y": 438,
    "strokeColor": "#1d4ed8",
    "backgroundColor": "transparent",
-   "width": 561.9,
+   "width": 618.0,
    "height": 18.8,
    "seed": 442292976,
    "groupIds": [
@@ -809,14 +809,14 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "ROS2 Humble (WSL2)  노드 4개: 인식 · 대차 · 제어 · 트윈 브리지 — 신규",
+   "text": "ROS2 Humble (WSL2)  노드 6개: 인식 · 대차 · 제어 · 트윈 브리지 · 도킹 — 신규",
    "fontSize": 15,
    "fontFamily": 1,
    "textAlign": "left",
    "verticalAlign": "top",
    "baseline": 15,
    "containerId": null,
-   "originalText": "ROS2 Humble (WSL2)  노드 4개: 인식 · 대차 · 제어 · 트윈 브리지 — 신규",
+   "originalText": "ROS2 Humble (WSL2)  노드 6개: 인식 · 대차 · 제어 · 트윈 브리지 · 도킹 — 신규",
    "lineHeight": 1.25
   },
   {
@@ -835,7 +835,7 @@
    "y": 466,
    "strokeColor": "#1e1e1e",
    "backgroundColor": "transparent",
-   "width": 576.4,
+   "width": 613.3,
    "height": 65.0,
    "seed": 1141860530,
    "groupIds": [
@@ -847,14 +847,14 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)\npick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기\ncart_node: hook_pose · 동적 TF  ·  twin_bridge: 트윈 = 로봇·카메라 (TCP)\nstatus JSON · rviz2 · launch_testing 통합 · ros2 bag · colcon test 37",
+   "text": "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)\npick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기\ncart_node: hook_pose · 동적 TF → dock_node+agv_sim 도킹  ·  twin_bridge: 트윈 (TCP)\nstatus JSON · rviz2 · launch_testing 통합 4 · ros2 bag · colcon test 38",
    "fontSize": 13,
    "fontFamily": 1,
    "textAlign": "left",
    "verticalAlign": "top",
    "baseline": 13,
    "containerId": null,
-   "originalText": "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)\npick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기\ncart_node: hook_pose · 동적 TF  ·  twin_bridge: 트윈 = 로봇·카메라 (TCP)\nstatus JSON · rviz2 · launch_testing 통합 · ros2 bag · colcon test 37",
+   "originalText": "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)\npick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기\ncart_node: hook_pose · 동적 TF → dock_node+agv_sim 도킹  ·  twin_bridge: 트윈 (TCP)\nstatus JSON · rviz2 · launch_testing 통합 4 · ros2 bag · colcon test 38",
    "lineHeight": 1.25
   },
   {

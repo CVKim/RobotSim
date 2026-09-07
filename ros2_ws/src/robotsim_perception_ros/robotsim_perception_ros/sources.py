@@ -147,7 +147,29 @@ class SyntheticCartSource:
         return frame, f"synthetic_cart#{self.k} (h={self.HEIGHTS[i]:.0f} yaw={self.YAWS[i]:+.0f})"
 
 
+class DockingCartSource:
+    """도킹 시뮬용 합성 대차: AGV 시뮬(agv_sim_node)이 주는 상대 포즈(hook_u, rim_v, yaw)로 프레임마다 장면을 렌더한다.
+    set_pose() 로 최신 포즈를 넣어 두면 next() 가 그 포즈의 프레임을 만든다 (프레임마다 다른 노이즈 시드)."""
+
+    def __init__(self, seed: int = 0, noise_mm: float = 2.5, init=(-80.0, -450.0, 5.0)):
+        from robotsim_perception.dock import RelPose
+        self.rp = RelPose(*init)
+        self.seed, self.noise_mm, self.k = int(seed), float(noise_mm), 0
+
+    def set_pose(self, hook_u_mm: float, rim_v_mm: float, yaw_deg: float):
+        from robotsim_perception.dock import RelPose
+        self.rp = RelPose(float(hook_u_mm), float(rim_v_mm), float(yaw_deg))
+
+    def next(self):
+        from robotsim_perception.synthetic_cart import make_cart_frame
+        self.k += 1
+        frame, _gt = make_cart_frame(noise_mm=self.noise_mm, seed=self.seed + self.k, **self.rp.render_kwargs())
+        return frame, f"dock#{self.k} (hook_u={self.rp.hook_u_mm:.0f} rim_v={self.rp.rim_v_mm:.0f} yaw={self.rp.yaw_deg:+.1f})"
+
+
 def make_cart_source(spec: str, seed: int = 0, loop: bool = True):
     if spec in ("", "synthetic"):
         return SyntheticCartSource(seed=seed, loop=loop)
+    if spec == "synthetic_dock":
+        return DockingCartSource(seed=seed)
     return SessionSource(spec, loop=loop)

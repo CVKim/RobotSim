@@ -54,6 +54,10 @@ from . import msgs
 from .sources import make_source
 
 
+class SourceError(RuntimeError):
+    """프레임 소스(센서·트윈 서버)가 프레임을 못 줬다. 노드는 죽지 않고 SOURCE_ERROR 를 보고한다."""
+
+
 class PerceptionNode(Node):
     def __init__(self):
         super().__init__("robotsim_perception")
@@ -104,7 +108,7 @@ class PerceptionNode(Node):
         if self.rate_hz > 0:
             # 단조 시계(STEADY_TIME) 사용. 기본 ROS 시계는 시스템 시간이라 벽시계가 뒤로 점프하면
             # (WSL2 에서 실측: 프레임 간 −66 s 점프, NTP 보정 시에도 발생 가능) 타이머가 멈춘다.
-            self.timer = self.create_timer(1.0 / self.rate_hz, self.process,
+            self.timer = self.create_timer(1.0 / self.rate_hz, self._tick,
                                            clock=Clock(clock_type=ClockType.STEADY_TIME))
         self.n = 0
         self.get_logger().info(
@@ -112,8 +116,18 @@ class PerceptionNode(Node):
             f"min_conf={self.th.min_confidence} frames {self.base_frame}->{self.cam_frame}")
 
     # ------------------------------------------------------------ core cycle
+    def _tick(self):
+        try:
+            self.process()
+        except SourceError as e:
+            self.get_logger().error(f"frame source failed, skipping this tick: {e}")
+
     def process(self):
-        item = self.source.next()
+        try:
+            item = self.source.next()
+        except (OSError, RuntimeError, ValueError) as e:
+            # 소켓 끊김·서버 오류·손상 프레임. rclpy 는 콜백 예외를 spin 밖으로 던져 노드를 죽이므로 여기서 잡는다 (리뷰 지적)
+            raise SourceError(repr(e)) from e
         if item is None:
             self.get_logger().info("source exhausted")
             if self.timer is not None:
@@ -151,7 +165,13 @@ class PerceptionNode(Node):
         return dec
 
     def on_capture(self, request, response):
-        dec = self.process()
+        try:
+            dec = self.process()
+        except SourceError as e:
+            self.get_logger().error(f"capture failed: {e}")
+            response.success = False
+            response.message = json.dumps({"status": "SOURCE_ERROR", "reason": str(e)[:200]}, ensure_ascii=False)
+            return response
         if dec is None:
             response.success, response.message = False, "source exhausted"
         else:

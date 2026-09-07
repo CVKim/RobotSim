@@ -221,6 +221,8 @@ class Arm:
                 k = model.body_parentid[k]
         self.arm_gids = {g for g in range(model.ngeom) if model.geom_bodyid[g] in sub}
         self.cup_gid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "suction_g")
+        # 들고 있는 물체를 접촉 검사에 넣기 위한 훅: contacts() 가 자세를 바꾼 뒤 부른다 (ArmCell 이 박스를 TCP 에 맞춰 옮긴다)
+        self.payload_sync = None
         self.home = np.concatenate([[0.0], HOME]) if self.has_track else HOME.copy()
 
     # ---- 상태 ----------------------------------------------------------
@@ -365,6 +367,8 @@ class Arm:
             self.set_q(q)
         else:
             self.mj.mj_forward(self.m, self.d)
+        if self.payload_sync is not None:
+            self.payload_sync()             # 들고 있는 박스를 이 자세의 TCP 에 맞춰 놓는다 (mj_forward 포함)
         out = []
         allowed = set(int(g) for g in allowed_gids)
         for i in range(self.d.ncon):

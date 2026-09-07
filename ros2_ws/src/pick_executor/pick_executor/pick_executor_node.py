@@ -22,8 +22,12 @@
     empty_retries   2
     watchdog_s      10.0   촬영 요청 뒤 이 시간 안에 판단이 없으면 오류 로그 + 재요청 (메시지 유실 대비)
     startup_delay_s 3.0    기동 후 첫 촬영 요청까지 대기 (디스커버리)
+    done_topic      ''     비어 있지 않으면 이 토픽(String JSON {"ok","result",...})의 로봇 완료 보고로 실행을 끝낸다
+                           (execute_time_s 타이머 대신). 트윈 브리지(twin_bridge)가 /robot/execution_result 로 낸다.
+    execute_timeout_s 120  done_topic 모드에서 이 시간 안에 보고가 없으면 오류 로그 후 재촬영
 
-  실제 셀에서는 /robot/target_poses 를 로봇 드라이버(또는 MoveIt) 가 받고, execute_time_s 대기 대신 로봇의 완료 신호를 기다린다.
+  실제 셀에서는 /robot/target_poses 를 로봇 드라이버(또는 MoveIt) 가 받고 완료 신호를 준다 — done_topic 모드가 그 형태다.
+  execute_time_s 타이머 모드는 로봇이 없을 때의 흉내다.
 """
 from __future__ import annotations
 
@@ -107,8 +111,12 @@ class PickExecutorNode(Node):
                            clearance_m=float(P("clearance_m", 0.15).value),
                            lift_m=float(P("lift_m", 0.25).value),
                            stop_on_empty=bool(P("stop_on_empty", True).value),
-                           empty_retries=int(P("empty_retries", 2).value))
+                           empty_retries=int(P("empty_retries", 2).value),
+                           max_no_progress=int(P("max_no_progress", 12).value))
+        self.last_cmd_stamp = None
         self.execute_time_s = float(P("execute_time_s", 2.0).value)
+        self.done_topic = str(P("done_topic", "").value)
+        self.execute_timeout_s = float(P("execute_timeout_s", 120.0).value)
         self.trigger_capture = bool(P("trigger_capture", False).value)
         capture_service = str(P("capture_service", "/robotsim_perception/capture").value)
         startup_delay = float(P("startup_delay_s", 3.0).value)
@@ -121,6 +129,8 @@ class PickExecutorNode(Node):
         self.pub_traj = self.create_publisher(MarkerArray, "/robot/trajectory", 10)
         self.pub_state = self.create_publisher(String, "/pick_executor/state", 10)
         self.cli = self.create_client(Trigger, capture_service) if self.trigger_capture else None
+        self.sub_done = (self.create_subscription(String, self.done_topic, self.on_robot_done, 10)
+                         if self.done_topic else None)
 
         # 타이머는 단조 시계로 (WSL2 벽시계 점프 대책 — 인식 노드와 같은 이유). rclpy 타이머는 주기적이므로
         # one-shot 은 콜백에서 cancel 하고, 새로 만들 때는 반드시 이전 것을 cancel+destroy 한다 (안 하면 참조를 잃은
@@ -131,7 +141,8 @@ class PickExecutorNode(Node):
         self.start_timer = self.create_timer(startup_delay, self.on_startup, clock=self.steady) if self.trigger_capture else None
         self.get_logger().info(
             f"min_dist={self.ex.min_dist_m} m clearance={self.ex.clearance_m} lift={self.ex.lift_m} "
-            f"execute_time={self.execute_time_s}s trigger_capture={self.trigger_capture} -> {capture_service}")
+            f"execute_time={self.execute_time_s}s trigger_capture={self.trigger_capture} -> {capture_service}"
+            + (f" done_topic={self.done_topic} (timeout {self.execute_timeout_s:.0f}s)" if self.done_topic else ""))
 
     # ---- 타이머 유틸 -------------------------------------------------------
     def _arm(self, attr: str, period_s: float, callback):
@@ -171,22 +182,26 @@ class PickExecutorNode(Node):
         if action is None:
             return
         stamp = self.get_clock().now().to_msg()
-        if action.kind in ("send", "skip_duplicate", "skip_status", "empty", "done"):
+        if action.kind in ("send", "skip_duplicate", "skip_status", "empty", "done", "retry_later"):
             self._disarm("watchdog")                    # 이 프레임에 대한 판단이 났다
         if action.kind == "send":
             traj = action.trajectory
+            self.last_cmd_stamp = [int(stamp.sec), int(stamp.nanosec)]   # 결과 보고의 cmd_stamp 와 대조한다
             self.pub_targets.publish(trajectory_to_posearray(traj, stamp, self.frame_id))
             self.pub_traj.publish(trajectory_markers(traj, stamp, self.frame_id))
             pk = traj.pick
             self.get_logger().info(
                 f"{action.reason}: pick=({pk[0]:.3f},{pk[1]:.3f},{pk[2]:.3f}) m pre_z={traj.pre_pick[2]:.3f} "
                 f"lift_z={traj.lift[2]:.3f} -> /robot/target_poses (3 poses)")
-            self._arm("exec_timer", self.execute_time_s, self.on_execute_done)
+            # 로봇 완료 보고를 기다리는 모드면 타이머는 '보고가 안 올 때' 의 안전장치(timeout)다
+            self._arm("exec_timer", self.execute_timeout_s if self.done_topic else self.execute_time_s, self.on_execute_done)
         elif action.kind == "busy":
             self.get_logger().debug(action.reason)
         elif action.kind in ("skip_duplicate", "skip_status", "empty"):
-            (self.get_logger().warn if action.kind == "skip_status" else self.get_logger().info)(
-                f"no command: {action.reason}")
+            if action.kind == "skip_status":        # rclpy 로거는 호출 지점마다 심각도 고정 -> 분기해서 부른다
+                self.get_logger().warn(f"no command: {action.reason}")
+            else:
+                self.get_logger().info(f"no command: {action.reason}")
             if self.trigger_capture and self.exec_timer is None and self.ex.state != "DONE":
                 self._arm("exec_timer", self.execute_time_s, self.on_execute_done)   # 잠시 뒤 재촬영 (백오프)
         elif action.kind == "done":
@@ -195,6 +210,9 @@ class PickExecutorNode(Node):
             self.get_logger().info(f"DONE: {action.reason} — {self.ex.counters}")
         elif action.kind == "recapture":
             self.request_capture()
+        elif action.kind == "retry_later":
+            self.get_logger().warn(f"{action.reason} — retrying in {self.execute_time_s:.0f} s")
+            self._arm("exec_timer", self.execute_time_s, self.on_execute_done)
         elif action.kind == "noop":
             return
         self.pub_state.publish(String(data=json.dumps(dict(self.ex.snapshot(), last_action=action.kind), ensure_ascii=False)))
@@ -207,8 +225,36 @@ class PickExecutorNode(Node):
         self.get_logger().info("requesting first capture")
         self.request_capture()
 
+    def on_robot_done(self, msg: String):
+        """로봇(트윈 브리지)의 실행 결과 보고. EXECUTING 중일 때만 뜻이 있다 (그 외는 늦게 온 보고 -> 무시)."""
+        try:
+            res = json.loads(msg.data)
+        except json.JSONDecodeError:
+            self.get_logger().warn(f"robot result is not JSON: {msg.data[:80]}")
+            return
+        if self.ex.state != "EXECUTING":
+            self.get_logger().debug(f"robot result while {self.ex.state}: ignored")
+            return
+        cs = res.get("cmd_stamp")
+        if cs is not None and self.last_cmd_stamp is not None and [int(v) for v in cs] != self.last_cmd_stamp:
+            self.get_logger().warn(f"robot result for another command (stamp {cs} != {self.last_cmd_stamp}) — ignored")
+            return
+        self._disarm("exec_timer")
+        line = (f"robot: {res.get('result')} (ok={res.get('ok')}) sim {res.get('cycle_s', '?')} s, "
+                f"remaining {res.get('remaining', '?')}, placed {res.get('placed', '?')}")
+        if res.get("ok"):                       # rclpy 로거는 호출 지점마다 심각도 고정 -> 분기해서 부른다
+            self.get_logger().info(line)
+        else:
+            self.get_logger().warn(line)
+        if self.trigger_capture:
+            self.apply_action(self.ex.on_robot_result(res))
+        else:
+            self.ex.on_robot_result(res)
+
     def on_execute_done(self):
         self._disarm("exec_timer")
+        if self.done_topic and self.ex.state == "EXECUTING":
+            self.get_logger().error(f"robot did not report completion within {self.execute_timeout_s:.0f} s — requesting a new frame")
         if self.trigger_capture:
             self.apply_action(self.ex.on_execute_done())
         elif self.ex.state == "EXECUTING":

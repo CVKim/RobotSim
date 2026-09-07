@@ -50,6 +50,12 @@ SOURCES = [
      "팔레타이징 RL 다중 시드 + action mask ablation (시드 3개씩)"),
 ]
 
+# 다른 도구가 results/ 에 직접 쓰는 공개 JSON (여기서 복사하지 않지만 색인에는 넣는다 — 재생성 때 행이 사라졌던 결함)
+DIRECT = [
+    ("twin_arm_reach.json", "UR10e 도달·충돌·이동 시간 — 받침대 위치 sweep, 트랙, 실측 픽 포즈 167개 (프레임 익명화; tools/twin_arm_reach.py)"),
+    ("ros2_twin_cycle.json", "ROS2 그래프(인식 노드 → pick_executor → twin_bridge)가 트윈을 카메라·로봇으로 써서 소스 팔레트를 비운 기록 (tools/twin_cycle_summary.py)"),
+]
+
 SESSION_RE = re.compile(r"\b1260\d{11}\b")
 
 
@@ -93,6 +99,9 @@ def main():
               "회사 원본 데이터(깊이맵·좌표·RGB)는 포함하지 않으며, 세션 폴더명(현장 타임스탬프)은",
               f"`frame_01`..`frame_{len(mapping):02d}` 으로 익명화했다 (docs/03 공개 정책).\n",
               "| 파일 | 내용 |", "|---|---|"]
+    for name, desc in DIRECT:
+        if (OUT / name).exists():
+            index.append({"file": name, "source": "(직접 생성)", "description": desc})
     for it in index:
         readme.append(f"| [{it['file']}]({it['file']}) | {it['description']} |")
     (OUT / "README.md").write_text("\n".join(readme) + "\n", encoding="utf-8")

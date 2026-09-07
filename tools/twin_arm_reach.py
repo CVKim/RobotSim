@@ -32,7 +32,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT))
 
 from arm import Arm, box_body_geom_ids, rot_from_approach_yaw  # noqa: E402
-from cell_scene import BOX, CAM_H, DECK_H, N_COL, N_ROW, build_xml, dest_world_xy, full_layout, grid_xy  # noqa: E402
+from cell_scene import BOX, CAM_H, DECK_H, N_COL, N_ROW, build_xml, dest_slots, dest_world_xy, full_layout, grid_xy  # noqa: E402
 from cell_twin import settle  # noqa: E402
 
 OUT_LOCAL = ROOT / "explore" / "twin" / "arm_reach.json"
@@ -44,8 +44,9 @@ DWELL_S = 0.3           # 흡착 / 해제 대기
 
 
 def _targets_for(scene: str):
-    """scene 'top2': 소스 2층 상면 12 + 목적지(1층 위) 2층째 12 / 'top1': 소스 1층 상면 12 + 목적지(빈 데크) 1층째 12.
-    두 장면을 합쳐 48목표: 소스 상면 24 (2층 12 + 1층 12) + 목적지 24 (2층째 12 + 1층째 12).
+    """scene 'top2': 소스 2층 상면 12 + 목적지(1층 위) 2층째 9 / 'top1': 소스 1층 상면 12 + 목적지(빈 데크) 1층째 9.
+    두 장면을 합쳐 42목표: 소스 상면 24 (2층 12 + 1층 12) + 목적지 18 (2층째 9 + 1층째 9).
+    목적지는 3열(cell_scene.DEST_COLS): 4열째 슬롯은 소스 박스와 1.6 mm 겹쳐 놓을 수 없는 자리라 목표에서도 뺀다.
     반환 [(tag, xyz_pick(m), yaw_deg)]"""
     dx, dy = dest_world_xy()
     out = []
@@ -56,7 +57,9 @@ def _targets_for(scene: str):
         for c in range(N_COL):
             x, y = grid_xy(c, r)
             out.append(("src", np.array([x, y, z_src]), 0.0))
-            out.append(("dst", np.array([dx + x, dy + y, z_dst + 0.01]), 0.0))
+    for c, r in dest_slots():
+        x, y = grid_xy(c, r)
+        out.append(("dst", np.array([dx + x, dy + y, z_dst + 0.01]), 0.0))
     return out
 
 
@@ -77,7 +80,7 @@ def eval_config(cfg: dict, fast: bool = False) -> dict:
     Rt = rot_from_approach_yaw((0, 0, -1), 0.0)
     for scene in ("top2", "top1"):
         layout = full_layout(2 if scene == "top2" else 1)
-        xml, _ = build_xml(layout, seed=7, dest_stack=(12 if scene == "top2" else 0),
+        xml, _ = build_xml(layout, seed=7, dest_stack=(len(dest_slots()) if scene == "top2" else 0),
                            arm=dict(base_xy=tuple(cfg["base_xy"]), pedestal_h=cfg["pedestal_h"],
                                     track_range=cfg.get("track_range", 0.0), meshes=False))
         m = mujoco.MjModel.from_xml_string(xml)
@@ -211,7 +214,8 @@ def eval_real(cfg: dict, fast: bool = False, max_frames: int | None = None) -> d
             elif not row["approach_free"]:
                 row["fail"] = "approach_collision"
             # 사이클 시간: 목적지 슬롯 순환 (1층째). 슬롯은 포즈마다 넘어간다 (안 닿는 슬롯에 갇히지 않게)
-            gx, gy = grid_xy(slot % N_COL, (slot // N_COL) % N_ROW)
+            slots = dest_slots()
+            gx, gy = grid_xy(*slots[slot % len(slots)])
             slot += 1
             place = np.array([dx + gx, dy + gy, DECK_H + BOX[2] + 0.01])
             pre_place = place + np.array([0, 0, PRE_M])
@@ -268,6 +272,7 @@ def summarize_real(real: dict) -> dict:
 # ------------------------------------------------------------------ 차트
 
 def chart(sweep, best, track, real_sum, path):
+    n_targets = len(_targets_for('top2')) + len(_targets_for('top1'))
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.font_manager as fm
@@ -299,7 +304,7 @@ def chart(sweep, best, track, real_sum, path):
                 ax.text(j, i, f"{grid[i, j]:.0f}", ha="center", va="center", color="w" if grid[i, j] < 60 else "k", fontsize=9)
     ax.set_xlabel("팔 베이스 x (m)")
     ax.set_ylabel("팔 베이스 y (m)")
-    ax.set_title(f"UR10e 고정 베이스: 48목표 중 도달·무충돌 비율 %  (받침대 {h:.1f} m)", fontsize=9.5)
+    ax.set_title(f"UR10e 고정 베이스: {n_targets}목표 중 도달·무충돌 비율 %  (받침대 {h:.1f} m)", fontsize=9.5)
     fig.colorbar(im, ax=ax, fraction=0.046)
     # (b) 최적 / 트랙 / 실측
     ax = axes[1]
@@ -310,7 +315,7 @@ def chart(sweep, best, track, real_sum, path):
         ax.text(b_.get_x() + b_.get_width() / 2, v + 1, f"{v:.0f}%", ha="center", fontsize=9)
     ax.set_ylim(0, 110)
     ax.set_ylabel("도달·무충돌 %")
-    ax.set_title("트윈 목표 48 (소스 상면 2층 12·1층 12 + 목적지 2층째 12·1층째 12)", fontsize=9.5)
+    ax.set_title(f"트윈 목표 {n_targets} (소스 상면 2층 12·1층 12 + 목적지 3열: 2층째 9·1층째 9)", fontsize=9.5)
     # (c) 실측 픽 포즈
     ax = axes[2]
     if real_sum:
@@ -359,7 +364,7 @@ def main():
     ys = [0.75, 0.85, 0.95] if not args.fast else [0.85]
     hs = [0.6, 0.8, 1.0, 1.2] if not args.fast else [0.8, 1.0]
     cfgs = [dict(base_xy=(x, y), pedestal_h=h) for h in hs for y in ys for x in xs]
-    print(f"A. 받침대 sweep: {len(cfgs)} 구성 x 48 목표")
+    print(f"A. 받침대 sweep: {len(cfgs)} 구성 x {len(_targets_for('top2')) + len(_targets_for('top1'))} 목표")
     with ProcessPoolExecutor(max_workers=args.workers) as ex:
         sweep = list(ex.map(eval_config, cfgs, [args.fast] * len(cfgs)))
     sweep.sort(key=lambda r: (-r["frac_ok"], -r["src_frac"], r["cfg"]["pedestal_h"]))

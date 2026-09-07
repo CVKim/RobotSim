@@ -29,6 +29,10 @@ IMG_W, IMG_H = 640, 480
 FOCAL_PX = 517.0
 DEST_XY_MM = (-1191.4, -38.3)   # 카메라 좌표계 mm
 N_COL, N_ROW = 4, 3
+# 목적지 격자: 소스와 같은 피치·행렬을 쓰되 **소스 쪽 4열째는 뺀다**. 목적지 중심(실측 -1191 mm)에서 4열째 슬롯의 박스 오른쪽 변은
+# 소스 1열 박스 왼쪽 변과 1.6 mm 겹친다(중심 거리 1191 = 4 x 300 - 9; 박스 293). 겹친 자리에 놓으면 접촉 임펄스로 박스가 밀리고,
+# 밀린 박스 위에 다음 박스가 놓이며 연쇄로 튕겨 나갔다(ROS 트윈 연결 실행에서 발견, seed 504 oracle 로 추적). 층당 9 슬롯.
+DEST_COLS = (0, 1, 2)
 
 
 def grid_xy(col, row):
@@ -41,6 +45,11 @@ def grid_xy(col, row):
 def dest_world_xy():
     """목적지 스택 중심: 카메라 좌표 mm -> 월드 m (Y 부호 반전)."""
     return DEST_XY_MM[0] / 1000.0, -DEST_XY_MM[1] / 1000.0
+
+
+def dest_slots():
+    """목적지 슬롯 (col, row) 목록 — 층당 len(DEST_COLS) x N_ROW = 9. 좌표는 grid_xy(col, row) 를 목적지 중심에 더해 얻는다."""
+    return [(c, r) for r in range(N_ROW) for c in DEST_COLS]
 
 
 ARM_DEFAULT = dict(base_xy=(-0.6, 0.85), pedestal_h=0.8, track_range=0.0)
@@ -191,10 +200,11 @@ def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
             f'    <geom name="sbox{k}_g" type="box" pos="{sb["x"]:.5f} {sb["y"]:.5f} {sb["z_top"] - hz:.5f}" '
             f'euler="0 0 {float(sb.get("yaw_rad", 0.0)):.5f}" size="{L / 2:.4f} {W / 2:.4f} {hz:.4f}" '
             f'rgba="0.55 0.36 0.22 1"/>\n')
+    slots = dest_slots()
     for k in range(dest_stack):
-        c, r = k % N_COL, (k // N_COL) % N_ROW
+        c, r = slots[k % len(slots)]
         x, y = grid_xy(c, r)
-        add_box(i, dx + x, dy + y, k // (N_COL * N_ROW), DECK_H, "dest")
+        add_box(i, dx + x, dy + y, k // len(slots), DECK_H, "dest")
         i += 1
 
     if arm_parts:

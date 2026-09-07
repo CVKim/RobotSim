@@ -16,22 +16,22 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 | 박스 검출 (실측 30프레임, RGB 대조 검증 167개) | v1 152 → **v2 167/167**, 빈 프레임 오검출 0, 340 ms | [상세 §1](docs/30_결과_상세.md#1-tof-기반-박스-검출치수-측정) · `results/detector_robustness.json` |
 | 치수 · 픽포인트 | L 292.3±8.0 / W 217.7±7.6 mm · 기울기 0.95° · 평면 RMS 5.4 mm | 상세 §1 |
 | 절대 정확도 (셀 트윈, 48장면) | 중심오차 **8.5 mm**(클린) / 9.8 mm(노이즈), 깊이 오차 0.0, 잔여 ≥4개 정밀도 0.95 | [상세 §8](docs/30_결과_상세.md#8-셀-디지털-트윈--절대-정답-기반-검증-mujoco) · `results/twin_detect_accuracy.json` |
-| 인식→제어 폐루프 (트윈, 60회, 같은 장면) | mocap 석션: oracle **100%** vs 인식 구동 **46.7%** (인식 비용 53.3%p, 11.7 s/픽) · UR10e 가 실제로 움직이면 oracle 85~88% vs 인식 60% (25~28 %p, 7.9~8.6 s) | [상세 §9](docs/30_결과_상세.md#9-인식--제어-폐루프-셀-트윈에서-실제로-집어-옮기기) · §10 · `results/twin_closed_loop*.json` |
-| 팔 도달·충돌 (UR10e, 트윈) | 실측 픽 포즈 167개: 고정 받침대 도달 87% → **리니어 트랙 100%**, 하강 무충돌 98%, 접근 무충돌 96%, 순수 이동 3.1 s/픽 | [상세 §10](docs/30_결과_상세.md#10-팔-도달충돌사이클--ur10e-를-트윈에-세우다) · `results/twin_arm_reach.json` |
+| 인식→제어 폐루프 (트윈, 60회) | mocap 석션: oracle **100%** vs 인식 구동 **43.3%** (인식 비용 56.7%p, 11.9 s/픽) · UR10e+트랙이 실제로 움직이면 oracle **100%** vs 인식 65% (35 %p, 7.8 s) · **ROS2 그래프가 트윈의 팔을 구동**: 12박스 중 10개 배치, 실패 0, 남은 2개는 층 선택 미검출 | [상세 §9](docs/30_결과_상세.md#9-인식--제어-폐루프-셀-트윈에서-실제로-집어-옮기기) · §10 · §11 · `results/twin_closed_loop*.json` · `results/ros2_twin_cycle.json` |
+| 팔 도달·충돌 (UR10e, 트윈) | 실측 픽 포즈 167개: 고정 받침대 도달 87% → **리니어 트랙 100%**, 하강·접근 무충돌 99~100%, 순수 이동 3.1 s/픽 | [상세 §10](docs/30_결과_상세.md#10-팔-도달충돌사이클--ur10e-를-트윈에-세우다) · `results/twin_arm_reach.json` |
 | 강건성 (교란 격자, 3시드) | 대면적 결손 30개에서 위치 일치 리콜 v1 57% → v2 74% | 상세 §하단 표 · `results/detector_robustness.json` |
 | ToF 노이즈 모델 | σ(mm) = 180.3 · I^−0.805 (정적 픽셀 12.7만) | [상세 §2](docs/30_결과_상세.md#2-tof-깊이-노이즈-특성-분석) |
 | 대차 후크 반복성 | 데크 ICP 정렬로 22.7 → **3.2 mm** | [상세 §7](docs/30_결과_상세.md#7-대차-후크-위치-반복성-3d-정합) |
 | sim2real / 학습 세그 | 합성 전용 0.00 → 노이즈 시뮬 0.43 → +실측 6장 0.99 · seg mAP50 0.99(무효 15%↑ 붕괴) | [상세 §4](docs/30_결과_상세.md#4-합성데이터-sim2real) · §6 |
 | 팔레타이징 RL (3시드) | MaskablePPO 64.7±0.3 vs 휴리스틱 56.6 (+14.3%) · mask 제거 43.2 | [상세 §3](docs/30_결과_상세.md#3-팔레타이징-강화학습) · `results/palletize_multiseed.json` |
 | 모방학습 · VLA | DART BC 100% (가상 Franka) · SmolVLA 파인튜닝 VRAM 4.7 GB | [상세 §5](docs/30_결과_상세.md#5-가상환경-제어모방학습-mujoco-franka) |
-| 테스트 | pytest **51** (46개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · colcon test 25 | `tests/` · `ros2_ws/.../test/` |
+| 테스트 | pytest **61** (46개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · colcon test 35 | `tests/` · `ros2_ws/.../test/` |
 
 ## 구성
 
 | 영역 | 무엇 | 어디 |
 |---|---|---|
 | 인식 패키지 | 검출(geometry) · 로봇 좌표/6-DoF 포즈(pose) · 판정 상태·드리프트(runtime) · 픽 순서(planner) · CLI/JSON | [`robotsim_perception/`](robotsim_perception/) · [docs/40](docs/40_패키지_사용법.md) |
-| ROS2 (Humble, WSL2) | 노드 3개 — `perception_node`(빈피킹: PoseArray base_link · 정적 TF) · `cart_node`(대차: 동적 TF tof_optical→cart · 도킹 목표 포즈) · `pick_executor`(3점 로봇 명령 · 재촬영 서비스 호출로 사이클 닫음) · rviz2 · colcon test 25 | [`ros2_ws/`](ros2_ws/src/) · [docs/42](docs/42_ROS2_핸즈온.md) |
+| ROS2 (Humble, WSL2) | 노드 4개 — `perception_node`(빈피킹: PoseArray base_link · 정적 TF) · `cart_node`(대차: 동적 TF tof_optical→cart · 도킹 목표 포즈) · `pick_executor`(3점 로봇 명령 · 재촬영 서비스 호출 · 로봇 완료 보고 대기) · `twin_bridge`(MuJoCo 트윈을 로봇 드라이버·카메라 자리에 연결) · rviz2 · colcon test 35 | [`ros2_ws/`](ros2_ws/src/) · [docs/42](docs/42_ROS2_핸즈온.md) |
 | 셀 디지털 트윈 | 실측 역산 지오메트리 MJCF · 절대 정답 평가 · 인식 구동 픽/플레이스 폐루프 · UR10e 팔(IK·충돌·관절 속도) 도달 분석 | [`sim/`](sim/) · [docs/41](docs/41_셀_트윈.md) |
 | 학습 · 시뮬 | BlenderProc/Isaac SDG · YOLO det/seg · MaskablePPO · BC/DART · SmolVLA · 로컬 VLM | [`tools/`](tools/) |
 | 검증 · 재현 | 교란 벤치 · 트윈 평가 · 전 세션 파리티 · 집계 JSON 공개 | [`tests/`](tests/) · [`results/`](results/) · [docs/21 실험로그](docs/21_실험로그.md) |
@@ -69,6 +69,17 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 노란 선이 pre-pick(파란 점), pick(빨간 점), lift(초록 점) 세 점의 궤적이고, 보이는 두 축은 lift 와 pre-pick 자세다(pick 자세의 축은 박스 판 아래).
 노드 그래프와 실행 기록은 [docs/42 6절](docs/42_ROS2_핸즈온.md)에 있다.*
 
+네 번째 노드 `twin_bridge` 는 이 명령을 **실제로 실행하는 쪽**을 MuJoCo 셀 트윈으로 대신한다. Windows 의 트윈 서버가 TCP 로 프레임 요청과
+3점 명령을 받아 UR10e(리니어 트랙)가 역기구학·직선 하강·흡착·목적지 배치를 수행하고, 브리지는 완료 보고와 TCP 경로를 ROS 토픽·TF 로 낸다.
+인식 노드도 같은 트윈을 카메라로 쓰므로 로봇이 옮긴 결과가 다음 프레임에 그대로 보인다. 12박스 팔레트를 명령 10회에 10개 배치, 실패 0,
+남은 2개는 층 선택이 놓쳐 종료했다. 첫 실행에서는 12개 중 6개가 놓는 순간 튕겨 나갔고, 그 추적이 픽 포즈 요 규약·페이로드 충돌 검사·
+목적지 슬롯 겹침 세 결함을 드러냈다([docs/41 7절](docs/41_셀_트윈.md)).
+
+![twin cycle](assets/ros2_twin_cycle_rviz.png)
+
+*화면 설명: 세 번째 픽이 실행되는 중. 초록·주황 판은 인식 노드가 본 남은 박스, 왼쪽 위 박스 위의 노란 세 점이 이번 명령(pre-pick·pick·lift), 하늘색
+선이 트윈 팔 끝(TCP)이 지나온 경로, 주황 구가 지금 팔 끝 위치(TF `tcp`)다. 오른쪽 위 점구름 덩어리가 팔 받침대와 트랙이다. 기록은 [docs/42 6-c](docs/42_ROS2_핸즈온.md).*
+
 ## 한계 (읽고 수치를 쓸 것)
 
 - 단일 SKU · 단일 카메라 포즈 · 연속 시퀀스 30프레임(레이아웃 2종). 다른 조명·손상·혼합 SKU 미검증
@@ -87,17 +98,17 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 | [docs/40_패키지_사용법.md](docs/40_패키지_사용법.md) | 인식 패키지 CLI·API·JSON 스키마·테스트 |
 | [docs/41_셀_트윈.md](docs/41_셀_트윈.md) | 트윈 구성 · 찾은 결함 · **검증하지 않는 것** |
 | [docs/42_ROS2_핸즈온.md](docs/42_ROS2_핸즈온.md) | ROS2 빌드·실행·CLI 탐색·실습 과제 |
-| [docs/21_실험로그.md](docs/21_실험로그.md) | 실험 58건 시간순 (기각한 시도 포함) |
+| [docs/21_실험로그.md](docs/21_실험로그.md) | 실험 62건 시간순 (기각한 시도 포함) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 다이어그램 + 검출 파이프라인 상세 |
 | [docs/00](docs/00_하드웨어_판정.md) · [02](docs/02_환경_셋업.md) · [03](docs/03_공개전략_및_데이터보안.md) | 하드웨어 판정 · 환경 셋업 · 데이터 보안 정책 |
-| [results/](results/) | README 수치의 원본 JSON 13종 (세션 ID 익명화) |
+| [results/](results/) | README 수치의 원본 JSON 18종 (세션 ID 익명화) |
 
 ## 빠른 시작
 
 ```powershell
 E:\Robot_Sim\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu126
-python -m pytest tests -q                                          # 51 passed (실측 데이터 없으면 5건 skip, 46 passed)
+python -m pytest tests -q                                          # 61 passed (실측 데이터 없으면 5건 skip; 팔 테스트 7건은 .venv 의 mujoco 필요)
 python -m robotsim_perception run <session_dir> --lattice --json out.json --overlay out.png
 .venv\Scripts\python.exe tools/twin_detect_eval.py --scenes 24   # 트윈 절대 정확도
 .venv\Scripts\python.exe tools/twin_closed_loop.py --episodes 10  # 폐루프

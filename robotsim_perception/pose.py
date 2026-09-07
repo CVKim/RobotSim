@@ -145,7 +145,14 @@ def box_to_pick_pose(box, T_base_cam: np.ndarray, clearance_mm: float = 150.0,
     ang_cam = g("ang_deg")
     if ang_cam is None:
         rect = g("rect_px")
-        ang_cam = float(rect[2]) if rect is not None else 0.0
+        # cv2.minAreaRect 의 angle 은 첫 변(width) 의 각도다. width 가 짧은 변이면 장축은 그보다 90도 돌아 있다.
+        # 이걸 안 보정하면 같은 자세의 박스가 프레임마다 요 0 또는 90 으로 나온다 — 트윈 연결 실행에서 90 으로 나온 픽을
+        # 팔이 그대로 90도 돌려 놓아 이웃과 겹치며 튕겨 나갔다(12박스 중 6). 원형 컵의 픽에는 무관하지만 놓는 자세에는 결정적이다.
+        if rect is not None:
+            (_, _), (rw, rh), rang = rect
+            ang_cam = float(rang) + (90.0 if float(rw) < float(rh) else 0.0)
+        else:
+            ang_cam = 0.0
     # 카메라 XY 의 장축 방향 벡터를 베이스로 옮겨 요를 다시 계산 (부호·회전 반영)
     d_cam = np.array([math.cos(math.radians(float(ang_cam))),
                       math.sin(math.radians(float(ang_cam))), 0.0])

@@ -32,7 +32,8 @@ plt.rcParams["axes.unicode_minus"] = False
 KO = {"placed": "배치 성공", "misplaced": "놓은 위치 어긋남", "grasp_miss": "흡착 실패", "source_empty": "소스 미검출(층 선택)",
       "rejected_footprint": "컵 아래 결손으로 거부", "ik_unreachable": "도달 불가", "path_collision": "경로 충돌",
       "descent_path_collision": "하강 경로 충돌", "descent_ik_unreachable": "하강 도달 불가", "only_unreachable_left": "남은 박스 도달 불가",
-      "place_ik_unreachable": "목적지 도달 불가", "place_path_collision": "목적지 경로 충돌"}
+      "place_ik_unreachable": "목적지 도달 불가", "place_path_collision": "목적지 경로 충돌",
+      "place_descent_path_collision": "목적지 하강 경로 충돌", "place_descent_ik_unreachable": "목적지 하강 도달 불가"}
 
 
 def main():

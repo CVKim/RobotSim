@@ -11,7 +11,6 @@ README 의 수치를 검증할 수 있도록 실험 산출 JSON 을 모아 둔 �
 | [detector_robustness.json](detector_robustness.json) | 기하 검출 v1 vs v2 강건성 (실측 30프레임, 교란 격자) |
 | [twin_detect_accuracy.json](twin_detect_accuracy.json) | 셀 트윈 절대 정답 기반 검출 정확도 (48장면) |
 | [twin_closed_loop.json](twin_closed_loop.json) | 셀 트윈 인식->제어 폐루프 (oracle vs 인식 구동, mocap 석션 EE) |
-| [twin_arm_reach.json](twin_arm_reach.json) | UR10e 도달·충돌·이동 시간 — 받침대 위치 sweep, 트랙, 실측 픽 포즈 167개 (프레임 익명화) |
 | [twin_closed_loop_arm_track.json](twin_closed_loop_arm_track.json) | 셀 트윈 폐루프 — UR10e + 리니어 트랙이 실제로 움직임 (IK·충돌 회피·관절 속도) |
 | [twin_closed_loop_arm_fixed.json](twin_closed_loop_arm_fixed.json) | 셀 트윈 폐루프 — UR10e 고정 받침대 (도달 불가 픽이 생기는 구성) |
 | [twin_closed_loop_mocap_armlayout.json](twin_closed_loop_mocap_armlayout.json) | 셀 트윈 폐루프 — mocap 석션을 팔 씬과 같은 설비 배치에서 (실행기 비교 기준선) |
@@ -25,3 +24,5 @@ README 의 수치를 검증할 수 있도록 실험 산출 JSON 을 모아 둔 �
 | [palletize_rl.json](palletize_rl.json) | 팔레타이징 MaskablePPO vs DBL 휴리스틱 |
 | [imitation_bc.json](imitation_bc.json) | 모방학습 BC/DART (가상 Franka) |
 | [palletize_multiseed.json](palletize_multiseed.json) | 팔레타이징 RL 다중 시드 + action mask ablation (시드 3개씩) |
+| [twin_arm_reach.json](twin_arm_reach.json) | UR10e 도달·충돌·이동 시간 — 받침대 위치 sweep, 트랙, 실측 픽 포즈 167개 (프레임 익명화; tools/twin_arm_reach.py) |
+| [ros2_twin_cycle.json](ros2_twin_cycle.json) | ROS2 그래프(인식 노드 → pick_executor → twin_bridge)가 트윈을 카메라·로봇으로 써서 소스 팔레트를 비운 기록 (tools/twin_cycle_summary.py) |

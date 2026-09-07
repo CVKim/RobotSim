@@ -89,9 +89,36 @@ class SessionSource:
         return load_frame(d), d.name
 
 
+class TwinSource:
+    """MuJoCo 셀 트윈(tools/twin_server.py, Windows 프로세스)을 카메라로 쓴다. spec = 'twin://host:port' (host 생략 시 WSL2 기본
+    게이트웨이 = Windows 호스트). 프레임마다 트윈을 렌더해 받으므로, 로봇(트윈 안의 UR10e)이 박스를 옮기면 다음 프레임에 그대로 반영된다.
+    소스 팔레트가 비면(정답 기준 — 실제 셀의 '팔레트 비움' PLC 신호에 해당) None 을 돌려 노드가 '소스 소진'을 알린다."""
+
+    def __init__(self, spec: str, loop: bool = False, timeout_s: float = 600.0):
+        from robotsim_perception.twin_link import TwinClient
+        self.client = TwinClient.from_spec(spec, timeout_s=timeout_s)   # 실행 중에는 응답이 늦어진다(한 픽 시뮬 수십 초)
+        self.loop = loop
+        self.info = None          # 연결은 첫 next() 에서 (서버가 늦게 떠도 노드가 죽지 않게 — 오류는 노드가 SOURCE_ERROR 로 처리)
+        self.k = 0
+
+    def next(self):
+        """프레임 하나. 서버 연결/응답 오류는 OSError/RuntimeError 로 올라가고, 노드가 SOURCE_ERROR 상태로 바꿔 보고한다."""
+        from robotsim_perception.frame import Frame
+        if self.info is None:
+            self.info = self.client.hello()
+        meta, f = self.client.frame()
+        if int(meta.get("remaining", 1)) == 0 and not self.loop:
+            return None
+        self.k += 1
+        name = f"{meta.get('name', 'twin')} (remaining {meta.get('remaining', '?')}, placed {meta.get('placed', '?')})"
+        return Frame(f["X"], f["Y"], f["D"], f["I"], source=name), name
+
+
 def make_source(spec: str, seed: int = 0, loop: bool = True, pick_every: int = 1):
     if spec in ("", "synthetic"):
         return SyntheticSource(seed=seed, loop=loop, pick_every=pick_every)
+    if spec.startswith("twin"):
+        return TwinSource(spec, loop=loop)
     return SessionSource(spec, loop=loop)
 
 

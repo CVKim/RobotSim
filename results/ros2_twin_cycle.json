@@ -1,0 +1,231 @@
+{
+ "what": "ROS2 그래프(perception_node -> pick_executor -> twin_bridge)가 MuJoCo 셀 트윈을 카메라·로봇으로 써서 소스 팔레트를 비운 기록",
+ "arm": "UR10e + 리니어 트랙 (tools/twin_server.py --arm track --seed 500 --boxes 12 --noise tof)",
+ "server": {
+  "arm": "track",
+  "seed": 500,
+  "n_boxes": 12,
+  "noise": "tof",
+  "arm_cfg": {
+   "base_xy": [
+    -0.6,
+    0.75
+   ],
+   "pedestal_h": 1.08,
+   "track_range": 0.6
+  }
+ },
+ "boxes_start": 12,
+ "frames": 13,
+ "commands": 10,
+ "placed": 10,
+ "remaining_end": 2,
+ "outcomes": {
+  "placed": 10
+ },
+ "sim_cycle_s": {
+  "mean": 7.53,
+  "min": 6.29,
+  "max": 10.92
+ },
+ "wall_per_execute_s": 0.89,
+ "detected_vs_truth": [
+  {
+   "frame": 1,
+   "truth": 12,
+   "detected": 4
+  },
+  {
+   "frame": 2,
+   "truth": 11,
+   "detected": 4
+  },
+  {
+   "frame": 3,
+   "truth": 10,
+   "detected": 10
+  },
+  {
+   "frame": 4,
+   "truth": 9,
+   "detected": 4
+  },
+  {
+   "frame": 5,
+   "truth": 8,
+   "detected": 7
+  },
+  {
+   "frame": 6,
+   "truth": 7,
+   "detected": 6
+  },
+  {
+   "frame": 7,
+   "truth": 6,
+   "detected": 6
+  },
+  {
+   "frame": 8,
+   "truth": 5,
+   "detected": 5
+  },
+  {
+   "frame": 9,
+   "truth": 4,
+   "detected": 4
+  },
+  {
+   "frame": 10,
+   "truth": 3,
+   "detected": 3
+  },
+  {
+   "frame": 11,
+   "truth": 2,
+   "detected": 0
+  },
+  {
+   "frame": 12,
+   "truth": 2,
+   "detected": 0
+  },
+  {
+   "frame": 13,
+   "truth": 2,
+   "detected": 0
+  }
+ ],
+ "detection_recall_mean_ok_frames": 0.787,
+ "detection_recall_mean_all_frames": 0.606,
+ "frames_not_ok": [
+  {
+   "frame": 11,
+   "status": "LAYER_EMPTY",
+   "truth": 2
+  },
+  {
+   "frame": 12,
+   "status": "LAYER_EMPTY",
+   "truth": 2
+  },
+  {
+   "frame": 13,
+   "status": "LAYER_EMPTY",
+   "truth": 2
+  }
+ ],
+ "done_reason": "layer empty 3 times in a row — nothing left to pick — {'sent': 10, 'busy': 0, 'skipped_duplicate': 0, 'skipped_status': 0, 'empty': 3, 'recapture': 12, 'unpaired_dropped': 0, 'robot_ok': 10, 'robot_fail': 0, 'robot_error': 0}",
+ "executions": [
+  {
+   "cmd": 1,
+   "result": "placed",
+   "ok": true,
+   "sim_cycle_s": 8.51,
+   "wall_s": 1.2,
+   "gap_mm": 21.3,
+   "place_err_mm": 12.4,
+   "remaining_after": 11,
+   "placed_after": 1
+  },
+  {
+   "cmd": 2,
+   "result": "placed",
+   "ok": true,
+   "sim_cycle_s": 7.48,
+   "wall_s": 0.9,
+   "gap_mm": 90.3,
+   "place_err_mm": 88.1,
+   "remaining_after": 10,
+   "placed_after": 2
+  },
+  {
+   "cmd": 3,
+   "result": "placed",
+   "ok": true,
+   "sim_cycle_s": 6.85,
+   "wall_s": 0.8,
+   "gap_mm": 18.0,
+   "place_err_mm": 13.2,
+   "remaining_after": 9,
+   "placed_after": 3
+  },
+  {
+   "cmd": 4,
+   "result": "placed",
+   "ok": true,
+   "sim_cycle_s": 6.42,
+   "wall_s": 0.7,
+   "gap_mm": 42.5,
+   "place_err_mm": 69.1,
+   "remaining_after": 8,
+   "placed_after": 4
+  },
+  {
+   "cmd": 5,
+   "result": "placed",
+   "ok": true,
+   "sim_cycle_s": 6.29,
+   "wall_s": 0.7,
+   "gap_mm": 18.4,
+   "place_err_mm": 54.1,
+   "remaining_after": 7,
+   "placed_after": 5
+  },
+  {
+   "cmd": 6,
+   "result": "placed",
+   "ok": true,
+   "sim_cycle_s": 6.81,
+   "wall_s": 0.8,
+   "gap_mm": 30.6,
+   "place_err_mm": 24.8,
+   "remaining_after": 6,
+   "placed_after": 6
+  },
+  {
+   "cmd": 7,
+   "result": "placed",
+   "ok": true,
+   "sim_cycle_s": 7.22,
+   "wall_s": 0.8,
+   "gap_mm": 17.4,
+   "place_err_mm": 41.6,
+   "remaining_after": 5,
+   "placed_after": 7
+  },
+  {
+   "cmd": 8,
+   "result": "placed",
+   "ok": true,
+   "sim_cycle_s": 6.83,
+   "wall_s": 0.8,
+   "gap_mm": 18.7,
+   "place_err_mm": 48.5,
+   "remaining_after": 4,
+   "placed_after": 8
+  },
+  {
+   "cmd": 9,
+   "result": "placed",
+   "ok": true,
+   "sim_cycle_s": 10.92,
+   "wall_s": 1.3,
+   "gap_mm": 17.1,
+   "place_err_mm": 13.7,
+   "remaining_after": 3,
+   "placed_after": 9
+  },
+  {
+   "cmd": 10,
+   "result": "placed",
+   "ok": true,
+   "sim_cycle_s": 7.94,
+   "wall_s": 0.9,
+   "gap_mm": 17.0,
+   "place_err_mm": 5.3,
+   "remaining_after": 2,
+   "placed_after": 10
+  }
+ ]
+}

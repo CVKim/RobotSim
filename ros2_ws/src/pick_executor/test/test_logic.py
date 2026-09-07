@@ -159,3 +159,74 @@ def test_snapshot_is_json_friendly():
     ex.on_status({"status": "OK"})
     d = json.loads(json.dumps(ex.snapshot()))
     assert d["state"] == "EXECUTING" and d["sent"] == 1 and len(d["last_pick_m"]) == 3 and d["busy"] == 0
+
+
+def test_robot_failure_blocks_that_candidate_and_moves_to_the_next():
+    """트윈 연결: 로봇이 '도달 불가'를 보고한 pick 은 다음 프레임에서 건너뛰고 2번 후보를 보낸다."""
+    ex = Executor(min_dist_m=0.05)
+    P2 = (PICK[0] + 0.3, PICK[1], PICK[2])
+    ex.on_poses(_poses(PICK, P2))
+    assert ex.on_status({"status": "OK"}).kind == "send"
+    r = ex.on_robot_result({"ok": False, "result": "ik_unreachable", "cycle_s": 0.1})
+    assert r.kind == "recapture" and ex.state == "IDLE" and ex.counters["robot_fail"] == 1 and len(ex.blocked) == 1
+    # 같은 장면이 다시 온다 (박스가 그대로 있으니 인식 노드는 같은 1번 픽을 낸다)
+    ex.on_poses(_poses((PICK[0] + 0.004, PICK[1], PICK[2]), P2))
+    a = ex.on_status({"status": "OK"})
+    assert a.kind == "send" and np.allclose(a.trajectory.pick, P2), a
+    ok = ex.on_robot_result({"ok": True, "result": "placed", "cycle_s": 7.9})
+    assert ok.kind == "recapture" and ex.counters["robot_ok"] == 1 and ex.outcomes == {"ik_unreachable": 1, "placed": 1}
+    assert ex.snapshot()["blocked"] == 1
+
+
+def test_all_candidates_blocked_ends_after_retries():
+    ex = Executor(min_dist_m=0.05, empty_retries=2)
+    ex.on_poses(_poses(PICK))
+    ex.on_status({"status": "OK"})
+    ex.on_robot_result({"ok": False, "result": "path_collision"})
+    kinds = []
+    for _ in range(3):
+        ex.on_poses(_poses(PICK))
+        kinds.append(ex.on_status({"status": "OK"}).kind)
+    assert kinds == ["empty", "empty", "done"] and ex.state == "DONE"
+
+
+def test_robot_result_without_prior_send_is_harmless():
+    ex = Executor()
+    a = ex.on_robot_result({"ok": False, "result": "grasp_miss"})
+    assert a.kind == "recapture" and ex.blocked == [] and ex.state == "IDLE"
+
+
+def test_transport_errors_do_not_block_the_candidate():
+    """bridge_error / busy / unknown 은 박스에 대한 정보가 아니다 — 자리를 막지 않고 다시 촬영만 한다."""
+    ex = Executor(min_dist_m=0.05)
+    ex.on_poses(_poses(PICK))
+    assert ex.on_status({"status": "OK"}).kind == "send"
+    a = ex.on_robot_result({"ok": False, "result": "bridge_error", "error": "ConnectionResetError"})
+    assert a.kind == "recapture" and ex.blocked == [] and ex.counters["robot_error"] == 1 and ex.counters["robot_fail"] == 0
+    ex.on_poses(_poses(PICK))
+    assert ex.on_status({"status": "OK"}).kind == "send"          # 같은 자리를 다시 시도한다
+    b = ex.on_robot_result({"ok": False, "result": "grasp_miss"})
+    assert b.kind == "recapture" and len(ex.blocked) == 1 and ex.counters["robot_fail"] == 1
+
+
+def test_persistent_retake_ends_after_max_no_progress():
+    """트윈 소스는 소스가 비기 전엔 소진되지 않는다 — RETAKE 가 계속되면 종착점이 있어야 한다."""
+    ex = Executor(max_no_progress=5)
+    kinds = []
+    for _ in range(7):
+        ex.on_poses([])
+        kinds.append(ex.on_status({"status": "RETAKE", "reason": "valid 0.1"}).kind)
+    assert kinds[:5] == ["skip_status"] * 5 and kinds[5] == "done" and ex.state == "DONE"
+    # 명령이 나가면 카운터가 리셋된다
+    ex2 = Executor(max_no_progress=3)
+    for _ in range(3):
+        ex2.on_poses([])
+        assert ex2.on_status({"status": "RETAKE"}).kind == "skip_status"
+    ex2.on_poses(_poses(PICK))
+    assert ex2.on_status({"status": "OK"}).kind == "send" and ex2.no_progress == 0
+
+
+def test_source_error_response_retries_later():
+    ex = Executor()
+    a = ex.on_capture_failed('{"status": "SOURCE_ERROR", "reason": "ConnectionRefusedError"}')
+    assert a.kind == "retry_later" and ex.state == "IDLE"

@@ -23,7 +23,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
@@ -35,7 +37,7 @@ sys.path.insert(0, str(ROOT))
 
 from binpick_topface import detect_boxes_v2  # noqa: E402
 from cell_scene import (BOX, CAM_H, DECK_H, N_COL, N_ROW, build_xml,  # noqa: E402
-                        dest_world_xy, grid_xy)
+                        dest_slots, dest_world_xy, grid_xy)
 from cell_twin import TwinRenderer, ground_truth, settle  # noqa: E402
 from robotsim_perception.pose import (box_to_pick_pose, suction_footprint_ok,  # noqa: E402
                                       topdown_camera_transform)
@@ -147,6 +149,10 @@ class Cell:
             self._carry()
         return True, "ok", float(np.linalg.norm(self.ee_pos() - goal)) * 1000.0
 
+    def move_linear(self, xyz_w, **kw):
+        """mocap 은 원래 직선으로 움직인다 — 팔 실행기와 인터페이스를 맞추기 위한 별칭."""
+        return self.move_to(xyz_w, **kw)
+
     def _carry(self):
         """흡착 중인 박스를 EE 에 강체 부착 (운동학적 이송 모델).
 
@@ -210,16 +216,30 @@ class Cell:
         self.m.geom_contype[gid] = 0
         self.m.geom_conaffinity[gid] = 0
 
+    SOFT_RELEASE_STEPS = 200      # 0.4 s
+    SOFT_SOLREF = (0.05, 1.0)     # 기본 접촉 timeconst 0.02 -> 0.05: 겹침을 천천히 푼다
+
     def release(self):
-        """부착 해제 후 물리로 안착시킨다 (스택 위 낙하·정렬은 물리 계산)."""
-        if getattr(self, "_held_gid", None) is not None:
-            self.m.geom_contype[self._held_gid] = self._saved_con[0]
-            self.m.geom_conaffinity[self._held_gid] = self._saved_con[1]
+        """부착 해제 후 물리로 안착시킨다 (스택 위 낙하·정렬은 물리 계산).
+
+        놓는 박스의 접촉을 처음 0.4 s 동안 부드럽게(solref timeconst 0.05) 둔다. 이송 중 박스는 충돌이 꺼져 있어 놓는 순간
+        이웃과 몇 mm 겹쳐 있을 수 있고(픽 위치 오차 = 인식 오차), 기본 강성으로는 그 침투가 한 스텝에 임펄스로 풀려 박스가
+        수십 cm~수 m 튕긴다(seed 504 oracle: box3 와 -4.7 mm 겹침 -> 26 mm 밀림 -> 다음 박스 -111 mm 겹침 -> 7 m 사출).
+        실제 셀에서는 컵 컴플라이언스와 골판지 압축이 그 겹침을 흡수한다 — 그 대용이다. 0.4 s 뒤 원래 강성으로 되돌린다."""
+        gid = getattr(self, "_held_gid", None)
+        saved_solref = None
+        if gid is not None:
+            self.m.geom_contype[gid] = self._saved_con[0]
+            self.m.geom_conaffinity[gid] = self._saved_con[1]
+            saved_solref = self.m.geom_solref[gid].copy()
+            self.m.geom_solref[gid] = self.SOFT_SOLREF
             self._held_gid = None
         self.held = None
         self.hold_offset = None
         self.mj.mj_forward(self.m, self.d)
-        for _ in range(600):
+        for k in range(600):
+            if k == self.SOFT_RELEASE_STEPS and saved_solref is not None:
+                self.m.geom_solref[gid] = saved_solref
             self.mj.mj_step(self.m, self.d)
             self.steps += 1
 
@@ -243,6 +263,40 @@ class ArmCell(Cell):
     def ee_pos(self):
         return self.d.site_xpos[self.arm.site_id]
 
+    @contextmanager
+    def _payload_aware(self):
+        """IK·접촉 검사 동안 들고 있는 박스를 **툴의 일부**로 본다: 충돌을 켜고, 후보 자세마다 TCP 에 맞춰 옮긴다.
+
+        이송 중 박스의 충돌은 꺼 둔다(운동학적 이송). 그래서 IK 가 팔뚝(forearm)이 박스를 관통하는 자세를 골라도 아무 신호가
+        없었고, 놓는 순간 충돌이 켜지며 40 mm 침투의 접촉 임펄스로 박스가 튕겨 나갔다(seed 507 oracle: 박스와 forearm_link_col1
+        접촉 -40 mm 를 release 직후 실측). 실제 로봇도 자기 페이로드와 부딪히면 안 되므로, 검사 때만 박스를 켜서 컵 이외 링크가
+        박스에 닿는 자세를 거른다. yield 값 = 검사에서 '컵 접촉 허용' 에 추가할 geom id 목록."""
+        gid = getattr(self, "_held_gid", None)
+        if self.held is None or gid is None:
+            yield []
+            return
+        self.m.geom_contype[gid], self.m.geom_conaffinity[gid] = self._saved_con
+        self.arm.payload_sync = self._carry
+        try:
+            yield [gid]
+        finally:
+            self.m.geom_contype[gid] = 0
+            self.m.geom_conaffinity[gid] = 0
+            self.arm.payload_sync = None
+
+    def _restore(self, q, qv):
+        self.d.qpos[self.arm.qadr] = q
+        self.d.qvel[self.arm.dadr] = qv
+        self.mj.mj_forward(self.m, self.d)
+        self._carry()                       # 검사 중 옮겨졌던 박스를 실제 TCP 로
+
+    def _nearest_yaw(self, yaw_deg: float) -> float:
+        """컵은 원형이라 요 y 와 y±180 은 같은 집기다. 현재 툴 x 축 방위각에 가까운 쪽을 골라 불필요한 손목 180도 회전을 피한다.
+        (검출 요는 [0,180) 으로 정규화돼 −1도짜리 박스가 179도로 온다 — 리뷰 지적.) 든 박스는 툴에 강체 부착이라 놓는 자세는 안 바뀐다."""
+        _, R = self.arm.tcp()
+        az = math.degrees(math.atan2(R[1, 0], R[0, 0]))
+        return min((yaw_deg + k for k in (-360.0, -180.0, 0.0, 180.0, 360.0)), key=lambda y: abs(y - az))
+
     def move_to(self, xyz_w, speed_mps=0.6, settle_steps=100, yaw_deg=0.0, allow_box_contact=False,
                 check_path=True, **_):
         """IK -> (경로 충돌 검사) -> 관절 보간 실행. 반환 (ok, reason, err_mm).
@@ -251,14 +305,15 @@ class ArmCell(Cell):
         allow_box_contact: 하강·안착 구간에서 컵이 박스에 닿는 것은 정상이므로 그 접촉은 충돌로 보지 않는다.
         """
         goal = np.asarray(xyz_w, float)
-        R = self._rot((0, 0, -1), yaw_deg)
+        R = self._rot((0, 0, -1), self._nearest_yaw(yaw_deg))
         q_now = self.arm.get_q()
         qv_now = self.d.qvel[self.arm.dadr].copy()
-        allowed = list(self.box_gids.values()) if allow_box_contact else []
-        # 충돌 회피 IK: 목표 자세와 (check_path 면) 현재 명령 자세에서의 관절 보간 경로가 환경에 닿지 않는 해
-        r, hits = self.arm.solve_ik_free(goal, R, self.q_cmd, allowed_gids=allowed,
-                                         path_from=(self.q_cmd if check_path else None), seeds=6, iters=200)
-        self._restore(q_now, qv_now)
+        with self._payload_aware() as extra:
+            allowed = (list(self.box_gids.values()) if allow_box_contact else []) + extra
+            # 충돌 회피 IK: 목표 자세와 (check_path 면) 현재 명령 자세에서의 관절 보간 경로가 환경(들고 있는 박스 포함)에 닿지 않는 해
+            r, hits = self.arm.solve_ik_free(goal, R, self.q_cmd, allowed_gids=allowed,
+                                             path_from=(self.q_cmd if check_path else None), seeds=6, iters=200)
+            self._restore(q_now, qv_now)
         if not r.ok:
             return False, "ik_unreachable", r.pos_err_m * 1000.0
         if hits and check_path:
@@ -266,10 +321,81 @@ class ArmCell(Cell):
         self._execute(r.q, speed_scale=(0.4 if speed_mps < 0.3 else 1.0), settle_steps=settle_steps)
         return True, "ok", float(np.linalg.norm(self.ee_pos() - goal)) * 1000.0
 
-    def _restore(self, q, qv):
-        self.d.qpos[self.arm.qadr] = q
-        self.d.qvel[self.arm.dadr] = qv
-        self.mj.mj_forward(self.m, self.d)
+    def move_linear(self, xyz_w, speed_mps=0.6, settle_steps=100, yaw_deg=0.0, allow_box_contact=False,
+                    step_m=0.05, **_):
+        """TCP 를 **직선**으로 옮긴다: 경로를 step_m 이하 구간으로 나눠 구간마다 현재 관절에서 IK 를 풀고 실행한다.
+
+        move_to 의 관절 공간 보간은 이동이 크면 TCP 가 곡선을 그린다(팔꿈치·손목 각도와 TCP 위치의 관계가 비선형).
+        놓은 박스 16 mm 위에서 52 cm 를 관절 보간으로 후퇴하자 컵이 박스를 54 mm 밀었고, 밀린 박스 위에 다음 박스가 놓이며
+        접촉 임펄스로 튕겨 나갔다(seed 507 oracle 추적 — 이전에 '운동학적 이송 아티팩트' 라고만 적었던 튕김의 실제 원인).
+        박스 근처의 하강·상승·후퇴는 이 함수로, 멀리 가는 이동은 move_to(경로 충돌 검사 포함)로 한다.
+        구간마다 접촉을 검사해(allowed 제외) 닿으면 그 자리에서 멈추고 False 를 돌려준다."""
+        goal = np.asarray(xyz_w, float)
+        R = self._rot((0, 0, -1), self._nearest_yaw(yaw_deg))
+        start = self.ee_pos().copy()
+        n = max(int(np.ceil(float(np.linalg.norm(goal - start)) / max(step_m, 1e-3))), 1)
+        q_now = self.arm.get_q()
+        qv_now = self.d.qvel[self.arm.dadr].copy()
+        qs, q_prev = [], self.q_cmd.copy()
+        with self._payload_aware() as extra:
+            allowed = (list(self.box_gids.values()) if allow_box_contact else []) + extra
+            for i in range(1, n + 1):
+                wp = start + (goal - start) * (i / n)
+                r = self.arm.solve_ik(wp, R, q0=q_prev, iters=150)
+                hits = self.arm.contacts(r.q, allowed) if r.ok else []
+                if not r.ok or hits:
+                    # 가까운 해가 없거나 닿으면: 여러 시드로 자세를 바꿔 보되, 직전 경유점에서의 관절 경로도 검사한다
+                    r, hits = self.arm.solve_ik_free(wp, R, q_prev, allowed_gids=allowed, path_from=q_prev, seeds=4, iters=150)
+                if not r.ok:
+                    self._restore(q_now, qv_now)
+                    return False, "ik_unreachable", r.pos_err_m * 1000.0
+                if hits:
+                    self._restore(q_now, qv_now)
+                    return False, "path_collision", 0.0
+                qs.append(np.asarray(r.q, float).copy())
+                q_prev = qs[-1]
+            self._restore(q_now, qv_now)
+        self._execute_path(qs, speed_scale=(0.4 if speed_mps < 0.3 else 1.0), settle_steps=settle_steps)
+        return True, "ok", float(np.linalg.norm(self.ee_pos() - goal)) * 1000.0
+
+    def _execute_path(self, qs, speed_scale=1.0, settle_steps=100):
+        """경유점 관절 자세들을 하나의 smoothstep 프로파일로 이어 실행한다 (경유점마다 멈추지 않는다).
+
+        진행 변수 = 누적 관절 이동량(최대 관절 기준). 시간은 관절별 총 이동량의 사다리꼴 추정과 최고 속도 한계 중 큰 쪽."""
+        pts = [self.q_cmd.copy()] + [np.asarray(q, float) for q in qs]
+        seg = [float(np.max(np.abs(pts[i + 1] - pts[i]))) for i in range(len(pts) - 1)]
+        cum = np.concatenate([[0.0], np.cumsum(seg)])
+        L = float(cum[-1])
+        if L < 1e-9:
+            for _ in range(settle_steps):
+                self.mj.mj_step(self.m, self.d)
+                self.steps += 1
+                self._carry()
+            self.q_cmd = pts[-1].copy()
+            return
+        segs = [np.abs(pts[i + 1] - pts[i]) for i in range(len(pts) - 1)]
+        total_dq = np.sum(segs, axis=0)
+        # 구간 k 에서 관절 j 의 속도 = (ds/dt) * dq_jk / seg_k, ds/dt 의 최대는 1.5 L / T. 어느 구간·관절도 vmax 를 넘지 않게
+        # (총 이동량 기준으로만 잡으면 구간마다 다른 관절이 지배할 때 넘는다 — 리뷰 지적)
+        ratio = max((float(np.max(dq / self.arm.vmax)) / sk) for dq, sk in zip(segs, seg) if sk > 1e-12)
+        t_peak = 1.5 * L * ratio
+        T = max(self.arm.segment_time(np.zeros_like(total_dq), total_dq), t_peak) / max(speed_scale, 1e-3)
+        steps = max(int(T * CTRL_HZ), 50)
+        for i in range(steps):
+            t = (i + 1) / steps
+            s = (t * t * (3 - 2 * t)) * L
+            k = int(np.searchsorted(cum, s, side="right")) - 1
+            k = min(max(k, 0), len(seg) - 1)
+            frac = (s - cum[k]) / seg[k] if seg[k] > 1e-12 else 1.0
+            self.arm.set_ctrl(pts[k] + (pts[k + 1] - pts[k]) * min(frac, 1.0))
+            self.mj.mj_step(self.m, self.d)
+            self.steps += 1
+            self._carry()
+        for _ in range(settle_steps):
+            self.mj.mj_step(self.m, self.d)
+            self.steps += 1
+            self._carry()
+        self.q_cmd = pts[-1].copy()
 
     def _execute(self, q_goal, speed_scale=1.0, settle_steps=100):
         q0 = self.q_cmd.copy()
@@ -393,7 +519,7 @@ def run_episode(layout, seed, oracle=False, conf_min=0.0, use_footprint=True, ve
                             print(f"    step {step}: 후보 거부 ({fp['reason']}) -> 다음 후보")
                         continue
                 tgt_c = cam_to_world(np.array(cand["center_mm"], float))
-                yaw_c = float(cand.get("ang_deg") or 0.0)
+                yaw_c = float(box_to_pick_pose(cand, T, clearance_mm=180.0).yaw_deg)
                 if arm_cfg:
                     ok, why, _ = cell.move_to(tgt_c + np.array([0, 0, 0.20]), yaw_deg=yaw_c)
                     if not ok:
@@ -410,56 +536,66 @@ def run_episode(layout, seed, oracle=False, conf_min=0.0, use_footprint=True, ve
                 continue
             pose = box_to_pick_pose(b, T, clearance_mm=180.0)
             tgt = cam_to_world(np.array(b["center_mm"], float))
-            yaw = float(b.get("ang_deg") or 0.0)
+            yaw = float(pose.yaw_deg)          # base 좌표의 장축 요 (인식 노드와 같은 규약)
             if not arm_cfg:
                 cell.move_to(tgt + np.array([0, 0, 0.20]))
-            ok, why, _ = cell.move_to(tgt + np.array([0, 0, 0.016]), speed_mps=0.25, yaw_deg=yaw, allow_box_contact=True)
+            # 박스 근처(하강·상승·후퇴)는 TCP 직선 이동, 멀리 가는 이송은 관절 보간 + 경로 충돌 검사 (ArmCell.move_linear 주석)
+            ok, why, _ = cell.move_linear(tgt + np.array([0, 0, 0.016]), speed_mps=0.25, yaw_deg=yaw, allow_box_contact=True)
             if not ok:
                 log["picks"].append({"step": step, "result": f"descent_{why}"})
-                cell.move_to(tgt + np.array([0, 0, 0.35]), yaw_deg=yaw, check_path=False)
+                cell.move_linear(tgt + np.array([0, 0, 0.35]), yaw_deg=yaw, allow_box_contact=True)
                 continue
             held, gap = cell.grasp()
             if held is None:
                 log["picks"].append({"step": step, "result": "grasp_miss",
                                      "gap_mm": round(gap, 1)})
-                cell.move_to(tgt + np.array([0, 0, 0.35]), yaw_deg=yaw, check_path=False)
+                cell.move_linear(tgt + np.array([0, 0, 0.35]), yaw_deg=yaw, allow_box_contact=True)
                 if verbose:
                     print(f"    step {step}: 흡착 실패 (gap {gap:.0f}mm)")
                 continue
             before = cell.d.xpos[cell.box_bid(held)].copy()
             t_pick0 = cell.steps
-            cell.move_to(tgt + np.array([0, 0, 0.45]), yaw_deg=yaw, check_path=False)
+            cell.move_linear(tgt + np.array([0, 0, 0.45]), yaw_deg=yaw, allow_box_contact=True)
             # 목적지 배치: 실제 이적재 공정처럼 4x3 격자 슬롯에 층층이 쌓는다.
             # (모든 박스를 목적지 중심 한 점에 떨어뜨리면 서로 부딪혀 무너진다 — 1차 시도에서 발생)
             # 팔이 있으면 '팔이 닿는 슬롯' 을 골라야 한다: 고정 받침대는 먼 슬롯에 못 닿으므로, 같은 층의 빈 슬롯을
             # 받침대에서 가까운 순으로 시도한다 (한 슬롯에 갇혀 모든 픽이 실패하던 1차 시도 교훈).
-            layer = len(filled) // (N_COL * N_ROW)
-            free_slots = [s for s in range(N_COL * N_ROW) if (layer, s) not in filled]
+            slots = dest_slots()                 # 3열 x 3행 (4열째는 소스 박스와 겹쳐 제외 — cell_scene.DEST_COLS)
+            layer = len(filled) // len(slots)
+            free_slots = [s for s in range(len(slots)) if (layer, s) not in filled]
             if arm_cfg:
                 bx, by = arm_cfg["base_xy"]
-                free_slots.sort(key=lambda s: np.hypot(dest_w[0] + grid_xy(s % N_COL, s // N_COL)[0] - bx,
-                                                       dest_w[1] + grid_xy(s % N_COL, s // N_COL)[1] - by))
+                free_slots.sort(key=lambda s: np.hypot(dest_w[0] + grid_xy(*slots[s])[0] - bx,
+                                                       dest_w[1] + grid_xy(*slots[s])[1] - by))
             stack_h = DECK_H + BOX[2] * layer + BOX[2]
             ok, why, slot = False, "place_ik_unreachable", None
             for s in free_slots:
-                gx, gy = grid_xy(s % N_COL, s // N_COL)
+                gx, gy = grid_xy(*slots[s])
                 drop = np.array([dest_w[0] + gx, dest_w[1] + gy, 0.0])
-                ok, why, _ = cell.move_to(np.array([drop[0], drop[1], stack_h + 0.45]))
+                # 집은 자세(요) 그대로 이송한다. 목적지에서 요를 0 으로 되돌리면 검출 각도가 90 으로 나온 박스가 90도 돌아간 채
+                # 이웃 위에 놓여 튕겨 나간다 (ROS 트윈 연결 실행에서 발견 — 12박스 중 6 이 그렇게 misplaced 됐다)
+                ok, why, _ = cell.move_to(np.array([drop[0], drop[1], stack_h + 0.45]), yaw_deg=yaw)
+                if not ok:
+                    continue
+                # 직선 하강도 성공해야 그 슬롯에 놓는다. 하강 결과를 안 보고 놓으면 팔뚝이 박스를 관통한 채 놓는 일이 생긴다
+                ok, why, _ = cell.move_linear(np.array([drop[0], drop[1], stack_h + 0.03]), speed_mps=0.25, yaw_deg=yaw,
+                                              allow_box_contact=True)
                 if ok:
                     slot = s
                     break
+                why = f"descent_{why}"
+                cell.move_linear(np.array([drop[0], drop[1], stack_h + 0.45]), yaw_deg=yaw, allow_box_contact=True)
             if not ok:
                 # 목적지에 못 닿는다: 박스를 제자리에 돌려놓고 실패로 기록 (실제 셀이면 다른 슬롯 계획이 필요)
                 cell.move_to(tgt + np.array([0, 0, 0.45]), yaw_deg=yaw, check_path=False)
-                cell.move_to(tgt + np.array([0, 0, 0.02]), speed_mps=0.25, yaw_deg=yaw, allow_box_contact=True, check_path=False)
+                cell.move_linear(tgt + np.array([0, 0, 0.02]), speed_mps=0.25, yaw_deg=yaw, allow_box_contact=True)
                 cell.release()
-                cell.move_to(tgt + np.array([0, 0, 0.45]), yaw_deg=yaw, check_path=False)
+                cell.move_linear(tgt + np.array([0, 0, 0.45]), yaw_deg=yaw, allow_box_contact=True)
                 log["picks"].append({"step": step, "result": f"place_{why}", "box": held})
                 unreachable_ids.add((b["center_mm"][0], b["center_mm"][1]))
                 continue
-            cell.move_to(np.array([drop[0], drop[1], stack_h + 0.03]), speed_mps=0.25, allow_box_contact=True)
             cell.release()
-            cell.move_to(np.array([drop[0], drop[1], stack_h + 0.55]), check_path=False)
+            cell.move_linear(np.array([drop[0], drop[1], stack_h + 0.55]), yaw_deg=yaw, allow_box_contact=True)
             after = cell.d.xpos[cell.box_bid(held)]
             moved = (float(np.linalg.norm(after[:2] - drop[:2])) < 0.16
                      and after[2] > DECK_H - 0.05)

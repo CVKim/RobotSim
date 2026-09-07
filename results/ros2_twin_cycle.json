@@ -17,18 +17,18 @@
  },
  "boxes_start": 12,
  "frames": 13,
- "commands": 10,
- "placed": 10,
- "remaining_end": 2,
+ "commands": 12,
+ "placed": 12,
+ "remaining_end": 0,
  "outcomes": {
-  "placed": 10
+  "placed": 12
  },
  "sim_cycle_s": {
-  "mean": 7.53,
+  "mean": 7.51,
   "min": 6.29,
   "max": 10.92
  },
- "wall_per_execute_s": 0.89,
+ "wall_per_execute_s": 0.87,
  "detected_vs_truth": [
   {
    "frame": 1,
@@ -83,39 +83,18 @@
   {
    "frame": 11,
    "truth": 2,
-   "detected": 0
+   "detected": 2
   },
   {
    "frame": 12,
-   "truth": 2,
-   "detected": 0
-  },
-  {
-   "frame": 13,
-   "truth": 2,
-   "detected": 0
+   "truth": 1,
+   "detected": 1
   }
  ],
- "detection_recall_mean_ok_frames": 0.787,
- "detection_recall_mean_all_frames": 0.606,
- "frames_not_ok": [
-  {
-   "frame": 11,
-   "status": "LAYER_EMPTY",
-   "truth": 2
-  },
-  {
-   "frame": 12,
-   "status": "LAYER_EMPTY",
-   "truth": 2
-  },
-  {
-   "frame": 13,
-   "status": "LAYER_EMPTY",
-   "truth": 2
-  }
- ],
- "done_reason": "layer empty 3 times in a row — nothing left to pick — {'sent': 10, 'busy': 0, 'skipped_duplicate': 0, 'skipped_status': 0, 'empty': 3, 'recapture': 12, 'unpaired_dropped': 0, 'robot_ok': 10, 'robot_fail': 0, 'robot_error': 0}",
+ "detection_recall_mean_ok_frames": 0.823,
+ "detection_recall_mean_all_frames": 0.823,
+ "frames_not_ok": [],
+ "done_reason": "source exhausted: source exhausted — {'sent': 12, 'busy': 0, 'skipped_duplicate': 0, 'skipped_status': 0, 'empty': 0, 'recapture': 12, 'unpaired_dropped': 0, 'robot_ok': 12, 'robot_fail': 0, 'robot_error': 0}",
  "executions": [
   {
    "cmd": 1,
@@ -133,7 +112,7 @@
    "result": "placed",
    "ok": true,
    "sim_cycle_s": 7.48,
-   "wall_s": 0.9,
+   "wall_s": 0.7,
    "gap_mm": 90.3,
    "place_err_mm": 88.1,
    "remaining_after": 10,
@@ -144,7 +123,7 @@
    "result": "placed",
    "ok": true,
    "sim_cycle_s": 6.85,
-   "wall_s": 0.8,
+   "wall_s": 0.6,
    "gap_mm": 18.0,
    "place_err_mm": 13.2,
    "remaining_after": 9,
@@ -199,9 +178,9 @@
    "result": "placed",
    "ok": true,
    "sim_cycle_s": 6.83,
-   "wall_s": 0.8,
-   "gap_mm": 18.7,
-   "place_err_mm": 48.5,
+   "wall_s": 0.7,
+   "gap_mm": 19.1,
+   "place_err_mm": 49.2,
    "remaining_after": 4,
    "placed_after": 8
   },
@@ -226,6 +205,28 @@
    "place_err_mm": 5.3,
    "remaining_after": 2,
    "placed_after": 10
+  },
+  {
+   "cmd": 11,
+   "result": "placed",
+   "ok": true,
+   "sim_cycle_s": 7.27,
+   "wall_s": 0.9,
+   "gap_mm": 17.0,
+   "place_err_mm": 3.1,
+   "remaining_after": 1,
+   "placed_after": 11
+  },
+  {
+   "cmd": 12,
+   "result": "placed",
+   "ok": true,
+   "sim_cycle_s": 7.56,
+   "wall_s": 1.1,
+   "gap_mm": 16.7,
+   "place_err_mm": 3.5,
+   "remaining_after": 0,
+   "placed_after": 12
   }
  ]
 }

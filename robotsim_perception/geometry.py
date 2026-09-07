@@ -34,12 +34,27 @@ def valid_mask(sess):
     return m
 
 
-def _roi_depth_hist(D, valid, bin_mm=10, roi_frac=0.25):
-    """중앙 ROI(팔레트 영역) 유효 깊이 히스토그램 (find_top_layer 와 동일 정의)."""
+def layer_roi_mask(sess, roi_mm):
+    """카메라 XY 로 자른 팔레트 영역 마스크 (|X|,|Y| < roi_mm). 층 히스토그램을 여기로 한정하면 팔레트 밖의 바닥·설비·팔이
+    피크를 만들지 못한다 (셀 트윈: 카메라에 팔이 보이면 바닥/데크 피크가 바뀌어 같은 배치 15프레임 중 6프레임의 검출이 달랐다)."""
+    if roi_mm is None:
+        return None
+    X, Y = sess["X"], sess["Y"]
+    r = float(roi_mm)
+    return (np.abs(X) < r) & (np.abs(Y) < r)
+
+
+def _roi_depth_hist(D, valid, bin_mm=10, roi_frac=0.25, roi_mask=None):
+    """유효 깊이 히스토그램. roi_mask 가 있으면 그 영역(팔레트 XY), 없으면 화면 중앙 ROI(find_top_layer 와 동일 정의)."""
     h, w = D.shape
-    roi = np.zeros_like(valid)
-    roi[int(h * roi_frac):int(h * (1 - roi_frac)), int(w * roi_frac):int(w * (1 - roi_frac))] = True
+    if roi_mask is not None:
+        roi = roi_mask
+    else:
+        roi = np.zeros_like(valid)
+        roi[int(h * roi_frac):int(h * (1 - roi_frac)), int(w * roi_frac):int(w * (1 - roi_frac))] = True
     d = D[valid & roi]
+    if d.size < 10:
+        return np.zeros(0, int), np.zeros(1)
     lo, hi = np.percentile(d, [1, 99])
     bins = np.arange(lo, hi + bin_mm, bin_mm)
     hist, edges = np.histogram(d, bins=bins)
@@ -53,9 +68,11 @@ def _refine_peak(hist, edges, i):
     return float(np.average(centers, weights=hist[j0:j1] + 1e-9))
 
 
-def find_top_layer(D, valid, bin_mm=10, roi_frac=0.25):
-    """중앙 ROI(팔레트 영역)의 깊이 히스토그램에서 최대 피크 = 박스 상면 깊이."""
-    hist, edges = _roi_depth_hist(D, valid, bin_mm, roi_frac)
+def find_top_layer(D, valid, bin_mm=10, roi_frac=0.25, roi_mask=None):
+    """ROI 깊이 히스토그램에서 최대 피크 = 박스 상면 깊이 (기본: 화면 중앙 ROI, roi_mask 가 있으면 그 영역)."""
+    hist, edges = _roi_depth_hist(D, valid, bin_mm, roi_frac, roi_mask)
+    if len(hist) == 0:
+        return float("nan")
     return _refine_peak(hist, edges, int(np.argmax(hist)))
 
 
@@ -130,10 +147,12 @@ def _detect_boxes_at(sess, top_d, tol_mm=40, min_area_px=700):
     return top_d, mask, boxes
 
 
-def detect_boxes(sess, tol_mm=40, min_area_px=700):
+def detect_boxes(sess, tol_mm=40, min_area_px=700, roi_mask=None):
     D = sess["D"]
     valid = valid_mask(sess)
-    top_d = find_top_layer(D, valid)
+    top_d = find_top_layer(D, valid, roi_mask=roi_mask)
+    if not np.isfinite(top_d):
+        return float("nan"), np.zeros(D.shape, bool), []
     return _detect_boxes_at(sess, top_d, tol_mm=tol_mm, min_area_px=min_area_px)
 
 
@@ -438,9 +457,9 @@ def _cell_poly_px(M, center, e1, e2, h1, h2):
     return (np.c_[mm, np.ones(4)] @ M).astype(np.float32)
 
 
-def top_layer_candidates(D, valid, bin_mm=10, roi_frac=0.25, k=4, min_rel=0.15):
+def top_layer_candidates(D, valid, bin_mm=10, roi_frac=0.25, k=4, min_rel=0.15, roi_mask=None):
     """ROI 깊이 히스토그램의 국소 최대 피크들(질량 내림차순, 정밀화된 깊이 mm). [0] = find_top_layer 결과."""
-    hist, edges = _roi_depth_hist(D, valid, bin_mm, roi_frac)
+    hist, edges = _roi_depth_hist(D, valid, bin_mm, roi_frac, roi_mask)
     if len(hist) == 0:
         return []
     hp = np.pad(hist, 1)
@@ -484,8 +503,15 @@ def detect_boxes_v2(sess, tol_mm=40, min_area_px=700, conf_src=0.55, support_min
                     ring_w=0.0, bnd_w=1.0, bnd_min=-0.25, search_mm=36.0, search_step_mm=12.0, max_rounds=2,
                     dense_scan=True, replace_frac=0.3, layer_fallback=True, fallback_min_strong=1,
                     fallback_k=8, layer_pitch_mm=283.0, stack_align_mm=70.0, probe_dims_tol=0.35,
-                    conf_min=None, grid_res_mm=6.0, verbose=False, debug=None):
+                    conf_min=None, grid_res_mm=6.0, verbose=False, debug=None,
+                    layer_roi_mm=None, prior_top_mm=None, prior_tol_mm=None):
     """detect_boxes 래핑: (1) 박스별 신뢰도 (2) 격자 기반 결손 셀 보완('inferred').
+
+    layer_roi_mm : 층 히스토그램을 카메라 XY |X|,|Y| < r 로 한정 (팔레트 영역). None 이면 화면 중앙 ROI(기존).
+    prior_top_mm : 직전 프레임에서 고른 층 깊이(시간 사전). 주면 그 깊이를 후보에 넣고, 그 근처(±prior_tol_mm, 기본 층 피치의 절반)
+                   후보 중 박스가 1개 이상 나오는 층을 우선한다 — 박스가 1~3개 남으면 그 층의 픽셀 질량이 아래층·데크에 눌려
+                   피크에 못 들거나 strong 판정을 못 받아 선택기가 아래층으로 점프하던 실패 모드(docs/41 5절)를 막는다.
+                   프레임 사이에 층이 바뀌면(마지막 박스를 집음) 사전 층에서 박스가 안 나와 기존 규칙으로 돌아간다.
 
     반환 (top_d, mask, boxes). boxes 의 각 dict 는 v1 키(area_px, dims_mm, depth_mm, rect_px)에
       confidence(0~1), source('detected'|'inferred'), center_mm, ang_deg, plane_rms_mm, conf_components 추가.
@@ -505,9 +531,14 @@ def detect_boxes_v2(sess, tol_mm=40, min_area_px=700, conf_src=0.55, support_min
       - conf_min: 지정 시 그 미만 신뢰도의 박스(검출/추론 모두)를 출력에서 제외.
     """
     D, X, Y = sess["D"], sess["X"], sess["Y"]
-    top_d, mask, boxes_v1 = detect_boxes(sess, tol_mm=tol_mm, min_area_px=min_area_px)
+    roi_mask = layer_roi_mask(sess, layer_roi_mm)
+    top_d, mask, boxes_v1 = detect_boxes(sess, tol_mm=tol_mm, min_area_px=min_area_px, roi_mask=roi_mask)
+    if not np.isfinite(top_d):
+        return float("nan"), mask, []
     top, valid, boxes, geoms, strong = _annotate_layer(sess, top_d, boxes_v1, tol_mm, conf_src)
     layer_switched = False
+    if debug is not None:
+        debug["layer_rule"] = "histogram"
     if layer_fallback:
         # 층 선택: 히스토그램 질량이 가장 큰 피크가 항상 상면인 것은 아니다. 평평한 바닥·데크가
         # ROI 를 지배하면 질량 1위가 바닥이 된다(셀 트윈에서 발견: 바닥 4184mm 가 질량 1위이나
@@ -515,7 +546,10 @@ def detect_boxes_v2(sess, tol_mm=40, min_area_px=700, conf_src=0.55, support_min
         # **SKU 사전에 부합하는 신뢰(strong) 박스 수**가 최대인 층을 고른다(동수면 카메라에 가까운 층).
         # 기존 동작(strong==0 일 때만 재시도)은 엉뚱한 층이 그럴듯한 검출을 내면 재고하지 못했다.
         evaluated = [(top_d, mask, top, boxes, geoms, strong)]
-        for td in top_layer_candidates(D, valid, k=fallback_k)[1:]:
+        cands = top_layer_candidates(D, valid, k=fallback_k, roi_mask=roi_mask)[1:]
+        if prior_top_mm is not None and np.isfinite(prior_top_mm):
+            cands = [float(prior_top_mm)] + list(cands)        # 시간 사전 층은 피크가 약해도 반드시 평가한다
+        for td in cands:
             if any(abs(td - e[0]) < tol_mm for e in evaluated):
                 continue
             _, mask2, bx2 = _detect_boxes_at(sess, td, tol_mm=tol_mm, min_area_px=min_area_px)
@@ -535,11 +569,23 @@ def detect_boxes_v2(sess, tol_mm=40, min_area_px=700, conf_src=0.55, support_min
         # 상층 2973mm strong 1 vs 하층 3253mm strong 4 -> 하층 선택, GT 대비 FP 6).
         # 임계 1 이 안전해진 이유: 설비 높이를 실측대로 제한하자 바닥층의 허위 strong 이 사라졌다.
         pick = None
-        for need in (max(int(fallback_min_strong), 1),):
-            ok = [e for e in evaluated if len(e[5]) >= need]
-            if ok:
-                pick = min(ok, key=lambda e: e[0])
-                break
+        if prior_top_mm is not None and np.isfinite(prior_top_mm):
+            # 시간 사전: 직전 층 근처에서 박스가 하나라도 나오면 그 층 (strong 조건 없음 — 1~3개 남은 박스는 침식으로 약해진다).
+            # 여러 개면 신뢰 박스 수, 박스 수 순으로 고른다.
+            ptol = float(prior_tol_mm) if prior_tol_mm is not None else 0.5 * float(layer_pitch_mm)
+            near = [e for e in evaluated if abs(e[0] - prior_top_mm) < ptol and len(e[3]) >= 1]
+            if near:
+                pick = max(near, key=lambda e: (len(e[5]), len(e[3]), -e[0]))
+                if debug is not None:
+                    debug["layer_rule"] = "prior"
+        if pick is None:
+            for need in (max(int(fallback_min_strong), 1),):
+                ok = [e for e in evaluated if len(e[5]) >= need]
+                if ok:
+                    pick = min(ok, key=lambda e: e[0])
+                    if debug is not None:
+                        debug["layer_rule"] = "nearest_strong"
+                    break
         if pick is not None and pick[0] != top_d:
             top_d, mask, top, boxes, geoms, strong = pick
             layer_switched = True

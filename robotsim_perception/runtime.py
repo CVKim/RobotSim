@@ -25,7 +25,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 
-from .detect import DEFAULT_SKU, Box, detect_boxes, detect_top_layer
+from .detect import DEFAULT_SKU, Box, detect_boxes, detect_layer_and_boxes, detect_top_layer  # noqa: F401
 from .frame import Frame
 from .planner import DEFAULT_COL_TOL_MM, DEFAULT_DEST_XY_MM, pick_plan
 
@@ -40,6 +40,8 @@ class Thresholds:
     sku_tol: Optional[float] = 0.35     # SKU 대비 치수 허용(병합·조각 제거). None 이면 끔
     lattice: bool = True                # v2 격자 보완 사용 여부
     source_roi_mm: Optional[float] = None   # 소스 팔레트 반경(카메라 XY). None 이면 제한 없음
+    layer_roi_mm: Optional[float] = None    # 층 히스토그램을 이 반경(카메라 XY)으로 한정. None 이면 화면 중앙 ROI(기존)
+    temporal_prior: bool = False        # 직전 프레임의 층 깊이를 다음 프레임의 사전으로 (decide(..., prior_top_mm=) 로 전달)
 
     @classmethod
     def from_json(cls, path) -> "Thresholds":
@@ -88,8 +90,9 @@ class Decision:
 
 def decide(frame: Frame, th: Optional[Thresholds] = None,
            sku: Optional[Sequence[float]] = DEFAULT_SKU,
-           dest_xy_mm=DEFAULT_DEST_XY_MM, col_tol_mm: float = DEFAULT_COL_TOL_MM) -> Decision:
-    """프레임 하나 -> 실행 가능한 판정."""
+           dest_xy_mm=DEFAULT_DEST_XY_MM, col_tol_mm: float = DEFAULT_COL_TOL_MM,
+           prior_top_mm: Optional[float] = None) -> Decision:
+    """프레임 하나 -> 실행 가능한 판정. prior_top_mm: 직전 판정의 top_depth_mm (th.temporal_prior 일 때만 쓴다)."""
     th = th or Thresholds()
     t0 = time.perf_counter()
     valid_frac = float(frame.valid.mean())
@@ -101,13 +104,15 @@ def decide(frame: Frame, th: Optional[Thresholds] = None,
                         valid_frac=valid_frac, thresholds=thr,
                         latency_ms=(time.perf_counter() - t0) * 1e3)
 
-    top = detect_top_layer(frame)
+    top = detect_top_layer(frame, roi_mm=th.layer_roi_mm)
     if not top.ok:
         return Decision(status="NO_SURFACE", reason="top layer not found",
                         valid_frac=valid_frac, thresholds=thr,
                         latency_ms=(time.perf_counter() - t0) * 1e3)
 
-    boxes = detect_boxes(frame, sku=sku, sku_tol=th.sku_tol, lattice=th.lattice)
+    top_d_sel, boxes = detect_layer_and_boxes(frame, sku=sku, sku_tol=th.sku_tol, lattice=th.lattice,
+                                              layer_roi_mm=th.layer_roi_mm,
+                                              prior_top_mm=(prior_top_mm if th.temporal_prior else None))
     if th.source_roi_mm is not None:
         r = float(th.source_roi_mm)
         boxes = [b for b in boxes
@@ -115,7 +120,8 @@ def decide(frame: Frame, th: Optional[Thresholds] = None,
         for i, b in enumerate(boxes):
             b.id = i
 
-    top_d = round(float(top.depth_mm), 1)
+    # 보고하는 층 깊이 = v2 가 실제로 고른 층 (히스토그램 최대 피크와 다를 수 있다). 다음 프레임의 사전으로 쓴다.
+    top_d = round(float(top_d_sel if (th.lattice and np.isfinite(top_d_sel)) else top.depth_mm), 1)
     if not boxes:
         return Decision(status="LAYER_EMPTY", reason="no box on top layer",
                         valid_frac=valid_frac, top_depth_mm=top_d, thresholds=thr,

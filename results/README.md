@@ -14,6 +14,11 @@ README 의 수치를 검증할 수 있도록 실험 산출 JSON 을 모아 둔 �
 | [twin_closed_loop_arm_track.json](twin_closed_loop_arm_track.json) | 셀 트윈 폐루프 — UR10e + 리니어 트랙이 실제로 움직임 (IK·충돌 회피·관절 속도) |
 | [twin_closed_loop_arm_fixed.json](twin_closed_loop_arm_fixed.json) | 셀 트윈 폐루프 — UR10e 고정 받침대 (도달 불가 픽이 생기는 구성) |
 | [twin_closed_loop_mocap_armlayout.json](twin_closed_loop_mocap_armlayout.json) | 셀 트윈 폐루프 — mocap 석션을 팔 씬과 같은 설비 배치에서 (실행기 비교 기준선) |
+| [twin_closed_loop_prior.json](twin_closed_loop_prior.json) | 셀 트윈 폐루프 — mocap 석션 + 층 선택 시간 사전 (직전 프레임 층 깊이; 잔여 1~3개 층 점프 방지) |
+| [twin_closed_loop_arm_track_prior.json](twin_closed_loop_arm_track_prior.json) | 셀 트윈 폐루프 — UR10e 트랙 + 층 선택 시간 사전 |
+| [twin_closed_loop_prior_roi.json](twin_closed_loop_prior_roi.json) | 절제(ablation): mocap 석션 + 시간 사전 + 팔레트 ROI 히스토그램 |
+| [twin_closed_loop_arm_track_prior_roi.json](twin_closed_loop_arm_track_prior_roi.json) | 절제(ablation): UR10e 트랙 + 시간 사전 + 팔레트 ROI 히스토그램 |
+| [twin_closed_loop_arm_track_roi.json](twin_closed_loop_arm_track_roi.json) | 절제(ablation): UR10e 트랙 + 팔레트 ROI 히스토그램만 (사전 없음) |
 | [sim2real_reeval.json](sim2real_reeval.json) | 학습 모델 v2 정답 재평가 (홀드아웃 24장) |
 | [sim2real_gap.json](sim2real_gap.json) | sim2real 사다리 (합성 전용 -> 실측) |
 | [sim2real_cotrain.json](sim2real_cotrain.json) | 합성 + 실측 6장 co-training |

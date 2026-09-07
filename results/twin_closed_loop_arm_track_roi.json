@@ -1,0 +1,1616 @@
+{
+ "arm": "track",
+ "arm_cfg": {
+  "base_xy": [
+   -0.6,
+   0.75
+  ],
+  "pedestal_h": 1.08,
+  "track_range": 0.6
+ },
+ "perception": {
+  "episodes": 10,
+  "boxes": 60,
+  "placed": 39,
+  "success_rate": 0.65,
+  "outcomes": {
+   "placed": 39,
+   "grasp_miss": 6,
+   "rejected_footprint": 6,
+   "source_empty": 3
+  },
+  "logs": [
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 17.9,
+      "cycle_s": 8.69,
+      "transfer_s": 5.24,
+      "place_err_mm": 5.0,
+      "landed_z": 0.784,
+      "travel_mm": 595.3,
+      "yaw_deg": 179.9,
+      "conf": 0.759
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 17.4,
+      "cycle_s": 7.58,
+      "transfer_s": 5.13,
+      "place_err_mm": 3.8,
+      "landed_z": 0.784,
+      "travel_mm": 1490.2,
+      "yaw_deg": 0.0,
+      "conf": 0.777
+     },
+     {
+      "step": 2,
+      "result": "grasp_miss",
+      "gap_mm": -1.0
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 35.6,
+      "cycle_s": 6.68,
+      "transfer_s": 4.86,
+      "place_err_mm": 2.3,
+      "landed_z": 0.784,
+      "travel_mm": 934.3,
+      "yaw_deg": 4.8,
+      "conf": 0.625
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 17.2,
+      "cycle_s": 7.03,
+      "transfer_s": 4.8,
+      "place_err_mm": 1.9,
+      "landed_z": 0.784,
+      "travel_mm": 1191.0,
+      "yaw_deg": 0.0,
+      "conf": 0.777
+     },
+     {
+      "step": 5,
+      "result": "rejected_footprint",
+      "candidates_rejected": 1
+     }
+    ],
+    "seed": 500,
+    "oracle": false,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 4,
+    "success_rate": 0.667
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 17.8,
+      "cycle_s": 8.44,
+      "transfer_s": 5.87,
+      "place_err_mm": 4.6,
+      "landed_z": 0.784,
+      "travel_mm": 765.6,
+      "yaw_deg": 3.6,
+      "conf": 0.82
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 18.0,
+      "cycle_s": 6.72,
+      "transfer_s": 4.71,
+      "place_err_mm": 6.3,
+      "landed_z": 0.784,
+      "travel_mm": 881.3,
+      "yaw_deg": 3.6,
+      "conf": 0.711
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 17.8,
+      "cycle_s": 7.38,
+      "transfer_s": 5.4,
+      "place_err_mm": 3.8,
+      "landed_z": 0.784,
+      "travel_mm": 1494.2,
+      "yaw_deg": 175.9,
+      "conf": 0.807
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 17.2,
+      "cycle_s": 7.51,
+      "transfer_s": 5.11,
+      "place_err_mm": 3.0,
+      "landed_z": 0.784,
+      "travel_mm": 1803.9,
+      "yaw_deg": 0.0,
+      "conf": 0.822
+     },
+     {
+      "step": 4,
+      "result": "source_empty"
+     }
+    ],
+    "seed": 501,
+    "oracle": false,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 4,
+    "success_rate": 0.667
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 17.3,
+      "cycle_s": 8.62,
+      "transfer_s": 5.12,
+      "place_err_mm": 4.5,
+      "landed_z": 0.784,
+      "travel_mm": 893.4,
+      "yaw_deg": 0.0,
+      "conf": 0.816
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 19.2,
+      "cycle_s": 7.01,
+      "transfer_s": 4.89,
+      "place_err_mm": 8.4,
+      "landed_z": 0.784,
+      "travel_mm": 624.7,
+      "yaw_deg": 0.0,
+      "conf": 0.797
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 52.9,
+      "cycle_s": 7.28,
+      "transfer_s": 5.15,
+      "place_err_mm": 22.3,
+      "landed_z": 0.784,
+      "travel_mm": 1561.7,
+      "yaw_deg": 89.2,
+      "conf": 0.78
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 21.8,
+      "cycle_s": 7.66,
+      "transfer_s": 4.86,
+      "place_err_mm": 22.7,
+      "landed_z": 0.784,
+      "travel_mm": 1490.7,
+      "yaw_deg": 0.0,
+      "conf": 0.722
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 18.3,
+      "cycle_s": 7.61,
+      "transfer_s": 5.01,
+      "place_err_mm": 16.3,
+      "landed_z": 0.784,
+      "travel_mm": 1553.9,
+      "yaw_deg": 0.0,
+      "conf": 0.819
+     },
+     {
+      "step": 5,
+      "result": "grasp_miss",
+      "gap_mm": -1.0
+     }
+    ],
+    "seed": 502,
+    "oracle": false,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 5,
+    "success_rate": 0.833
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 18.5,
+      "cycle_s": 9.4,
+      "transfer_s": 6.48,
+      "place_err_mm": 6.4,
+      "landed_z": 0.784,
+      "travel_mm": 641.7,
+      "yaw_deg": 0.0,
+      "conf": 0.803
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 17.3,
+      "cycle_s": 6.8,
+      "transfer_s": 4.85,
+      "place_err_mm": 3.3,
+      "landed_z": 0.784,
+      "travel_mm": 911.0,
+      "yaw_deg": 0.0,
+      "conf": 0.795
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 17.5,
+      "cycle_s": 14.83,
+      "transfer_s": 5.21,
+      "place_err_mm": 7.1,
+      "landed_z": 0.784,
+      "travel_mm": 1848.0,
+      "yaw_deg": 0.0,
+      "conf": 0.842
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 18.4,
+      "cycle_s": 7.25,
+      "transfer_s": 4.88,
+      "place_err_mm": 8.4,
+      "landed_z": 0.784,
+      "travel_mm": 1501.8,
+      "yaw_deg": 0.0,
+      "conf": 0.811
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 18.2,
+      "cycle_s": 6.82,
+      "transfer_s": 4.67,
+      "place_err_mm": 5.7,
+      "landed_z": 0.784,
+      "travel_mm": 1195.2,
+      "yaw_deg": 0.0,
+      "conf": 0.802
+     },
+     {
+      "step": 5,
+      "result": "grasp_miss",
+      "gap_mm": -1.0
+     }
+    ],
+    "seed": 503,
+    "oracle": false,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 5,
+    "success_rate": 0.833
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 18.8,
+      "cycle_s": 8.45,
+      "transfer_s": 5.88,
+      "place_err_mm": 7.4,
+      "landed_z": 0.784,
+      "travel_mm": 770.3,
+      "yaw_deg": 1.2,
+      "conf": 0.869
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 20.7,
+      "cycle_s": 6.75,
+      "transfer_s": 4.81,
+      "place_err_mm": 11.5,
+      "landed_z": 0.784,
+      "travel_mm": 628.3,
+      "yaw_deg": 0.1,
+      "conf": 0.844
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 19.6,
+      "cycle_s": 6.9,
+      "transfer_s": 4.93,
+      "place_err_mm": 9.7,
+      "landed_z": 0.784,
+      "travel_mm": 1295.5,
+      "yaw_deg": 0.7,
+      "conf": 0.702
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 17.1,
+      "cycle_s": 7.23,
+      "transfer_s": 4.9,
+      "place_err_mm": 13.8,
+      "landed_z": 0.784,
+      "travel_mm": 1212.8,
+      "yaw_deg": 2.9,
+      "conf": 0.822
+     },
+     {
+      "step": 4,
+      "result": "rejected_footprint",
+      "candidates_rejected": 1
+     },
+     {
+      "step": 5,
+      "result": "rejected_footprint",
+      "candidates_rejected": 1
+     }
+    ],
+    "seed": 504,
+    "oracle": false,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 4,
+    "success_rate": 0.667
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 17.7,
+      "cycle_s": 8.7,
+      "transfer_s": 5.24,
+      "place_err_mm": 3.6,
+      "landed_z": 0.784,
+      "travel_mm": 598.3,
+      "yaw_deg": 0.0,
+      "conf": 0.597
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 17.2,
+      "cycle_s": 7.96,
+      "transfer_s": 5.31,
+      "place_err_mm": 2.4,
+      "landed_z": 0.784,
+      "travel_mm": 1495.9,
+      "yaw_deg": 0.0,
+      "conf": 0.831
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 18.3,
+      "cycle_s": 7.1,
+      "transfer_s": 5.1,
+      "place_err_mm": 6.6,
+      "landed_z": 0.784,
+      "travel_mm": 1297.1,
+      "yaw_deg": 3.6,
+      "conf": 0.827
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 17.2,
+      "cycle_s": 7.13,
+      "transfer_s": 4.86,
+      "place_err_mm": 3.2,
+      "landed_z": 0.784,
+      "travel_mm": 1193.2,
+      "yaw_deg": 0.0,
+      "conf": 0.778
+     },
+     {
+      "step": 4,
+      "result": "grasp_miss",
+      "gap_mm": -1.0
+     },
+     {
+      "step": 5,
+      "result": "grasp_miss",
+      "gap_mm": -1.0
+     }
+    ],
+    "seed": 505,
+    "oracle": false,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 4,
+    "success_rate": 0.667
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 51.8,
+      "cycle_s": 9.59,
+      "transfer_s": 6.29,
+      "place_err_mm": 49.0,
+      "landed_z": 0.784,
+      "travel_mm": 1247.0,
+      "yaw_deg": 90.0,
+      "conf": 0.734
+     },
+     {
+      "step": 1,
+      "result": "source_empty"
+     }
+    ],
+    "seed": 506,
+    "oracle": false,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 1,
+    "success_rate": 0.167
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 17.7,
+      "cycle_s": 9.39,
+      "transfer_s": 6.47,
+      "place_err_mm": 3.9,
+      "landed_z": 0.784,
+      "travel_mm": 647.1,
+      "yaw_deg": 0.0,
+      "conf": 0.793
+     },
+     {
+      "step": 1,
+      "result": "grasp_miss",
+      "gap_mm": -1.0
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 17.9,
+      "cycle_s": 6.6,
+      "transfer_s": 4.66,
+      "place_err_mm": 6.1,
+      "landed_z": 0.784,
+      "travel_mm": 924.1,
+      "yaw_deg": 0.1,
+      "conf": 0.807
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 17.1,
+      "cycle_s": 6.83,
+      "transfer_s": 4.81,
+      "place_err_mm": 1.5,
+      "landed_z": 0.784,
+      "travel_mm": 1218.8,
+      "yaw_deg": 0.0,
+      "conf": 0.777
+     },
+     {
+      "step": 4,
+      "result": "source_empty"
+     }
+    ],
+    "seed": 507,
+    "oracle": false,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 3,
+    "success_rate": 0.5
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 17.3,
+      "cycle_s": 8.68,
+      "transfer_s": 5.23,
+      "place_err_mm": 1.6,
+      "landed_z": 0.784,
+      "travel_mm": 595.5,
+      "yaw_deg": 0.0,
+      "conf": 0.835
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 18.7,
+      "cycle_s": 6.95,
+      "transfer_s": 4.85,
+      "place_err_mm": 7.8,
+      "landed_z": 0.784,
+      "travel_mm": 927.4,
+      "yaw_deg": 176.6,
+      "conf": 0.869
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 18.6,
+      "cycle_s": 7.69,
+      "transfer_s": 5.39,
+      "place_err_mm": 7.2,
+      "landed_z": 0.784,
+      "travel_mm": 1819.1,
+      "yaw_deg": 0.0,
+      "conf": 0.744
+     },
+     {
+      "step": 3,
+      "result": "rejected_footprint",
+      "candidates_rejected": 1
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 17.8,
+      "cycle_s": 7.11,
+      "transfer_s": 4.85,
+      "place_err_mm": 4.4,
+      "landed_z": 0.784,
+      "travel_mm": 1190.2,
+      "yaw_deg": 0.0,
+      "conf": 0.57
+     },
+     {
+      "step": 5,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 19.0,
+      "cycle_s": 7.47,
+      "transfer_s": 5.08,
+      "place_err_mm": 13.3,
+      "landed_z": 0.784,
+      "travel_mm": 975.6,
+      "yaw_deg": 2.8,
+      "conf": 0.658
+     }
+    ],
+    "seed": 508,
+    "oracle": false,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 5,
+    "success_rate": 0.833
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 19.2,
+      "cycle_s": 8.69,
+      "transfer_s": 5.23,
+      "place_err_mm": 8.2,
+      "landed_z": 0.784,
+      "travel_mm": 598.8,
+      "yaw_deg": 177.6,
+      "conf": 0.818
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 17.0,
+      "cycle_s": 7.33,
+      "transfer_s": 5.01,
+      "place_err_mm": 3.8,
+      "landed_z": 0.784,
+      "travel_mm": 1518.6,
+      "yaw_deg": 0.0,
+      "conf": 0.883
+     },
+     {
+      "step": 2,
+      "result": "rejected_footprint",
+      "candidates_rejected": 1
+     },
+     {
+      "step": 3,
+      "result": "rejected_footprint",
+      "candidates_rejected": 2
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 17.7,
+      "cycle_s": 7.44,
+      "transfer_s": 5.14,
+      "place_err_mm": 8.1,
+      "landed_z": 0.784,
+      "travel_mm": 1195.6,
+      "yaw_deg": 0.0,
+      "conf": 0.742
+     },
+     {
+      "step": 5,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 17.8,
+      "cycle_s": 7.01,
+      "transfer_s": 4.79,
+      "place_err_mm": 1.2,
+      "landed_z": 0.784,
+      "travel_mm": 1199.7,
+      "yaw_deg": 0.0,
+      "conf": 0.829
+     }
+    ],
+    "seed": 509,
+    "oracle": false,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 4,
+    "success_rate": 0.667
+   }
+  ],
+  "cycle_s": {
+   "mean": 7.8,
+   "p95": 9.42,
+   "n": 39
+  }
+ },
+ "oracle": {
+  "episodes": 10,
+  "boxes": 60,
+  "placed": 60,
+  "success_rate": 1.0,
+  "outcomes": {
+   "placed": 60
+  },
+  "logs": [
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 17.2,
+      "cycle_s": 8.68,
+      "transfer_s": 5.23,
+      "place_err_mm": 0.4,
+      "landed_z": 0.784,
+      "travel_mm": 594.1,
+      "yaw_deg": 0.6,
+      "conf": 1.0
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 17.0,
+      "cycle_s": 6.85,
+      "transfer_s": 4.79,
+      "place_err_mm": 0.5,
+      "landed_z": 0.784,
+      "travel_mm": 596.7,
+      "yaw_deg": 1.3,
+      "conf": 1.0
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 17.0,
+      "cycle_s": 7.2,
+      "transfer_s": 5.1,
+      "place_err_mm": 0.7,
+      "landed_z": 0.784,
+      "travel_mm": 1218.0,
+      "yaw_deg": 0.4,
+      "conf": 1.0
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 16.7,
+      "cycle_s": 7.2,
+      "transfer_s": 4.9,
+      "place_err_mm": 1.1,
+      "landed_z": 0.784,
+      "travel_mm": 1509.7,
+      "yaw_deg": 0.0,
+      "conf": 1.0
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 16.6,
+      "cycle_s": 7.04,
+      "transfer_s": 4.77,
+      "place_err_mm": 1.2,
+      "landed_z": 0.784,
+      "travel_mm": 1482.0,
+      "yaw_deg": 0.9,
+      "conf": 1.0
+     },
+     {
+      "step": 5,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 16.9,
+      "cycle_s": 7.51,
+      "transfer_s": 5.3,
+      "place_err_mm": 1.3,
+      "landed_z": 0.784,
+      "travel_mm": 2106.1,
+      "yaw_deg": 178.9,
+      "conf": 1.0
+     }
+    ],
+    "seed": 500,
+    "oracle": true,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 6,
+    "success_rate": 1.0
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 17.3,
+      "cycle_s": 8.42,
+      "transfer_s": 5.86,
+      "place_err_mm": 1.3,
+      "landed_z": 0.784,
+      "travel_mm": 767.8,
+      "yaw_deg": 3.2,
+      "conf": 1.0
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 16.9,
+      "cycle_s": 6.72,
+      "transfer_s": 4.71,
+      "place_err_mm": 0.7,
+      "landed_z": 0.784,
+      "travel_mm": 886.5,
+      "yaw_deg": 2.2,
+      "conf": 1.0
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 16.9,
+      "cycle_s": 7.38,
+      "transfer_s": 5.4,
+      "place_err_mm": 4.8,
+      "landed_z": 0.784,
+      "travel_mm": 1494.3,
+      "yaw_deg": 178.7,
+      "conf": 1.0
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 16.8,
+      "cycle_s": 7.06,
+      "transfer_s": 4.85,
+      "place_err_mm": 1.1,
+      "landed_z": 0.784,
+      "travel_mm": 1492.1,
+      "yaw_deg": 179.9,
+      "conf": 1.0
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 16.2,
+      "cycle_s": 14.2,
+      "transfer_s": 4.74,
+      "place_err_mm": 1.6,
+      "landed_z": 0.784,
+      "travel_mm": 1495.4,
+      "yaw_deg": 0.8,
+      "conf": 1.0
+     },
+     {
+      "step": 5,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 17.0,
+      "cycle_s": 7.92,
+      "transfer_s": 5.5,
+      "place_err_mm": 1.0,
+      "landed_z": 0.784,
+      "travel_mm": 2095.1,
+      "yaw_deg": 0.8,
+      "conf": 1.0
+     }
+    ],
+    "seed": 501,
+    "oracle": true,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 6,
+    "success_rate": 1.0
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 17.2,
+      "cycle_s": 8.69,
+      "transfer_s": 5.23,
+      "place_err_mm": 0.5,
+      "landed_z": 0.784,
+      "travel_mm": 597.4,
+      "yaw_deg": 0.1,
+      "conf": 1.0
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 17.3,
+      "cycle_s": 7.46,
+      "transfer_s": 5.12,
+      "place_err_mm": 0.9,
+      "landed_z": 0.784,
+      "travel_mm": 915.1,
+      "yaw_deg": 178.6,
+      "conf": 1.0
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 16.7,
+      "cycle_s": 7.26,
+      "transfer_s": 5.17,
+      "place_err_mm": 1.1,
+      "landed_z": 0.784,
+      "travel_mm": 1570.4,
+      "yaw_deg": 0.2,
+      "conf": 1.0
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 17.0,
+      "cycle_s": 7.33,
+      "transfer_s": 4.94,
+      "place_err_mm": 1.1,
+      "landed_z": 0.784,
+      "travel_mm": 1492.6,
+      "yaw_deg": 0.1,
+      "conf": 1.0
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 17.0,
+      "cycle_s": 7.61,
+      "transfer_s": 5.02,
+      "place_err_mm": 1.2,
+      "landed_z": 0.784,
+      "travel_mm": 1552.8,
+      "yaw_deg": 178.8,
+      "conf": 1.0
+     },
+     {
+      "step": 5,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 16.9,
+      "cycle_s": 7.57,
+      "transfer_s": 5.36,
+      "place_err_mm": 1.2,
+      "landed_z": 0.784,
+      "travel_mm": 2107.0,
+      "yaw_deg": 179.7,
+      "conf": 1.0
+     }
+    ],
+    "seed": 502,
+    "oracle": true,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 6,
+    "success_rate": 1.0
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 17.3,
+      "cycle_s": 9.39,
+      "transfer_s": 6.48,
+      "place_err_mm": 0.4,
+      "landed_z": 0.784,
+      "travel_mm": 647.3,
+      "yaw_deg": 179.9,
+      "conf": 1.0
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 17.1,
+      "cycle_s": 6.81,
+      "transfer_s": 4.85,
+      "place_err_mm": 0.6,
+      "landed_z": 0.784,
+      "travel_mm": 910.7,
+      "yaw_deg": 178.5,
+      "conf": 1.0
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 16.9,
+      "cycle_s": 7.23,
+      "transfer_s": 4.95,
+      "place_err_mm": 1.8,
+      "landed_z": 0.784,
+      "travel_mm": 1568.0,
+      "yaw_deg": 179.9,
+      "conf": 1.0
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 17.1,
+      "cycle_s": 7.13,
+      "transfer_s": 4.87,
+      "place_err_mm": 1.6,
+      "landed_z": 0.784,
+      "travel_mm": 1492.8,
+      "yaw_deg": 178.7,
+      "conf": 1.0
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 16.2,
+      "cycle_s": 13.86,
+      "transfer_s": 4.74,
+      "place_err_mm": 1.6,
+      "landed_z": 0.784,
+      "travel_mm": 1488.1,
+      "yaw_deg": 0.0,
+      "conf": 1.0
+     },
+     {
+      "step": 5,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 16.9,
+      "cycle_s": 7.48,
+      "transfer_s": 5.27,
+      "place_err_mm": 1.9,
+      "landed_z": 0.784,
+      "travel_mm": 2108.1,
+      "yaw_deg": 0.7,
+      "conf": 1.0
+     }
+    ],
+    "seed": 503,
+    "oracle": true,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 6,
+    "success_rate": 1.0
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 17.2,
+      "cycle_s": 8.48,
+      "transfer_s": 5.9,
+      "place_err_mm": 1.1,
+      "landed_z": 0.784,
+      "travel_mm": 762.4,
+      "yaw_deg": 179.8,
+      "conf": 1.0
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 17.1,
+      "cycle_s": 6.75,
+      "transfer_s": 4.81,
+      "place_err_mm": 0.5,
+      "landed_z": 0.784,
+      "travel_mm": 617.5,
+      "yaw_deg": 0.3,
+      "conf": 1.0
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 16.8,
+      "cycle_s": 6.9,
+      "transfer_s": 4.93,
+      "place_err_mm": 1.4,
+      "landed_z": 0.784,
+      "travel_mm": 1285.3,
+      "yaw_deg": 179.9,
+      "conf": 1.0
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 17.1,
+      "cycle_s": 7.24,
+      "transfer_s": 4.91,
+      "place_err_mm": 0.9,
+      "landed_z": 0.784,
+      "travel_mm": 1198.6,
+      "yaw_deg": 0.9,
+      "conf": 1.0
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 17.0,
+      "cycle_s": 6.62,
+      "transfer_s": 4.54,
+      "place_err_mm": 1.2,
+      "landed_z": 0.784,
+      "travel_mm": 913.1,
+      "yaw_deg": 1.4,
+      "conf": 1.0
+     },
+     {
+      "step": 5,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 16.9,
+      "cycle_s": 7.72,
+      "transfer_s": 5.53,
+      "place_err_mm": 1.1,
+      "landed_z": 0.784,
+      "travel_mm": 2091.5,
+      "yaw_deg": 179.5,
+      "conf": 1.0
+     }
+    ],
+    "seed": 504,
+    "oracle": true,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 6,
+    "success_rate": 1.0
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 17.2,
+      "cycle_s": 8.69,
+      "transfer_s": 5.24,
+      "place_err_mm": 0.5,
+      "landed_z": 0.784,
+      "travel_mm": 596.2,
+      "yaw_deg": 0.5,
+      "conf": 1.0
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 16.8,
+      "cycle_s": 6.95,
+      "transfer_s": 4.85,
+      "place_err_mm": 0.7,
+      "landed_z": 0.784,
+      "travel_mm": 932.1,
+      "yaw_deg": 179.3,
+      "conf": 1.0
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 17.0,
+      "cycle_s": 7.14,
+      "transfer_s": 5.05,
+      "place_err_mm": 0.8,
+      "landed_z": 0.784,
+      "travel_mm": 1223.3,
+      "yaw_deg": 0.6,
+      "conf": 1.0
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 16.7,
+      "cycle_s": 7.18,
+      "transfer_s": 4.88,
+      "place_err_mm": 1.1,
+      "landed_z": 0.784,
+      "travel_mm": 1513.7,
+      "yaw_deg": 178.4,
+      "conf": 1.0
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 16.6,
+      "cycle_s": 7.03,
+      "transfer_s": 4.76,
+      "place_err_mm": 5.8,
+      "landed_z": 0.784,
+      "travel_mm": 1495.2,
+      "yaw_deg": 2.5,
+      "conf": 1.0
+     },
+     {
+      "step": 5,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 17.0,
+      "cycle_s": 7.89,
+      "transfer_s": 5.49,
+      "place_err_mm": 1.0,
+      "landed_z": 0.784,
+      "travel_mm": 2084.6,
+      "yaw_deg": 0.6,
+      "conf": 1.0
+     }
+    ],
+    "seed": 505,
+    "oracle": true,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 6,
+    "success_rate": 1.0
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 16.8,
+      "cycle_s": 8.63,
+      "transfer_s": 5.12,
+      "place_err_mm": 1.0,
+      "landed_z": 0.784,
+      "travel_mm": 895.5,
+      "yaw_deg": 179.9,
+      "conf": 1.0
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 16.8,
+      "cycle_s": 7.01,
+      "transfer_s": 4.82,
+      "place_err_mm": 0.9,
+      "landed_z": 0.784,
+      "travel_mm": 1215.5,
+      "yaw_deg": 0.0,
+      "conf": 1.0
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 17.2,
+      "cycle_s": 7.75,
+      "transfer_s": 5.36,
+      "place_err_mm": 0.8,
+      "landed_z": 0.784,
+      "travel_mm": 1490.9,
+      "yaw_deg": 0.7,
+      "conf": 1.0
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 17.0,
+      "cycle_s": 7.31,
+      "transfer_s": 4.92,
+      "place_err_mm": 1.1,
+      "landed_z": 0.784,
+      "travel_mm": 1483.7,
+      "yaw_deg": 179.8,
+      "conf": 1.0
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 16.6,
+      "cycle_s": 7.03,
+      "transfer_s": 4.77,
+      "place_err_mm": 1.1,
+      "landed_z": 0.784,
+      "travel_mm": 1494.7,
+      "yaw_deg": 0.9,
+      "conf": 1.0
+     },
+     {
+      "step": 5,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 17.0,
+      "cycle_s": 7.89,
+      "transfer_s": 5.49,
+      "place_err_mm": 1.0,
+      "landed_z": 0.784,
+      "travel_mm": 2087.1,
+      "yaw_deg": 2.4,
+      "conf": 1.0
+     }
+    ],
+    "seed": 506,
+    "oracle": true,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 6,
+    "success_rate": 1.0
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 17.3,
+      "cycle_s": 9.39,
+      "transfer_s": 6.47,
+      "place_err_mm": 0.4,
+      "landed_z": 0.784,
+      "travel_mm": 642.9,
+      "yaw_deg": 1.2,
+      "conf": 1.0
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 16.8,
+      "cycle_s": 6.93,
+      "transfer_s": 4.73,
+      "place_err_mm": 1.1,
+      "landed_z": 0.784,
+      "travel_mm": 926.7,
+      "yaw_deg": 2.4,
+      "conf": 1.0
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 17.0,
+      "cycle_s": 7.01,
+      "transfer_s": 5.05,
+      "place_err_mm": 0.7,
+      "landed_z": 0.784,
+      "travel_mm": 1218.3,
+      "yaw_deg": 0.4,
+      "conf": 1.0
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 17.1,
+      "cycle_s": 7.46,
+      "transfer_s": 5.06,
+      "place_err_mm": 1.0,
+      "landed_z": 0.784,
+      "travel_mm": 1505.2,
+      "yaw_deg": 179.3,
+      "conf": 1.0
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 16.9,
+      "cycle_s": 6.75,
+      "transfer_s": 4.6,
+      "place_err_mm": 1.3,
+      "landed_z": 0.784,
+      "travel_mm": 1212.7,
+      "yaw_deg": 3.7,
+      "conf": 1.0
+     },
+     {
+      "step": 5,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 16.9,
+      "cycle_s": 7.74,
+      "transfer_s": 5.54,
+      "place_err_mm": 1.1,
+      "landed_z": 0.784,
+      "travel_mm": 2092.9,
+      "yaw_deg": 0.2,
+      "conf": 1.0
+     }
+    ],
+    "seed": 507,
+    "oracle": true,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 6,
+    "success_rate": 1.0
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 17.2,
+      "cycle_s": 8.68,
+      "transfer_s": 5.23,
+      "place_err_mm": 0.4,
+      "landed_z": 0.784,
+      "travel_mm": 594.6,
+      "yaw_deg": 0.5,
+      "conf": 1.0
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 16.8,
+      "cycle_s": 6.95,
+      "transfer_s": 4.85,
+      "place_err_mm": 0.7,
+      "landed_z": 0.784,
+      "travel_mm": 931.6,
+      "yaw_deg": 178.3,
+      "conf": 1.0
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 17.3,
+      "cycle_s": 7.55,
+      "transfer_s": 5.26,
+      "place_err_mm": 0.8,
+      "landed_z": 0.784,
+      "travel_mm": 1191.5,
+      "yaw_deg": 1.4,
+      "conf": 1.0
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 17.0,
+      "cycle_s": 7.12,
+      "transfer_s": 4.86,
+      "place_err_mm": 0.9,
+      "landed_z": 0.784,
+      "travel_mm": 1192.2,
+      "yaw_deg": 1.1,
+      "conf": 1.0
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 17.0,
+      "cycle_s": 7.59,
+      "transfer_s": 5.01,
+      "place_err_mm": 1.2,
+      "landed_z": 0.784,
+      "travel_mm": 1547.7,
+      "yaw_deg": 178.8,
+      "conf": 1.0
+     },
+     {
+      "step": 5,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 16.9,
+      "cycle_s": 7.57,
+      "transfer_s": 5.36,
+      "place_err_mm": 1.2,
+      "landed_z": 0.784,
+      "travel_mm": 2109.2,
+      "yaw_deg": 0.3,
+      "conf": 1.0
+     }
+    ],
+    "seed": 508,
+    "oracle": true,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 6,
+    "success_rate": 1.0
+   },
+   {
+    "picks": [
+     {
+      "step": 0,
+      "result": "placed",
+      "box": 3,
+      "gap_mm": 17.2,
+      "cycle_s": 8.69,
+      "transfer_s": 5.24,
+      "place_err_mm": 0.5,
+      "landed_z": 0.784,
+      "travel_mm": 590.2,
+      "yaw_deg": 177.7,
+      "conf": 1.0
+     },
+     {
+      "step": 1,
+      "result": "placed",
+      "box": 4,
+      "gap_mm": 17.3,
+      "cycle_s": 7.45,
+      "transfer_s": 5.11,
+      "place_err_mm": 0.9,
+      "landed_z": 0.784,
+      "travel_mm": 905.0,
+      "yaw_deg": 179.8,
+      "conf": 1.0
+     },
+     {
+      "step": 2,
+      "result": "placed",
+      "box": 1,
+      "gap_mm": 17.0,
+      "cycle_s": 7.18,
+      "transfer_s": 5.08,
+      "place_err_mm": 0.7,
+      "landed_z": 0.784,
+      "travel_mm": 1225.9,
+      "yaw_deg": 178.9,
+      "conf": 1.0
+     },
+     {
+      "step": 3,
+      "result": "placed",
+      "box": 0,
+      "gap_mm": 16.6,
+      "cycle_s": 7.38,
+      "transfer_s": 4.99,
+      "place_err_mm": 1.3,
+      "landed_z": 0.784,
+      "travel_mm": 1816.3,
+      "yaw_deg": 179.9,
+      "conf": 1.0
+     },
+     {
+      "step": 4,
+      "result": "placed",
+      "box": 5,
+      "gap_mm": 17.0,
+      "cycle_s": 7.6,
+      "transfer_s": 5.01,
+      "place_err_mm": 1.2,
+      "landed_z": 0.784,
+      "travel_mm": 1547.6,
+      "yaw_deg": 0.4,
+      "conf": 1.0
+     },
+     {
+      "step": 5,
+      "result": "placed",
+      "box": 2,
+      "gap_mm": 16.9,
+      "cycle_s": 7.56,
+      "transfer_s": 5.36,
+      "place_err_mm": 1.2,
+      "landed_z": 0.784,
+      "travel_mm": 2108.4,
+      "yaw_deg": 0.1,
+      "conf": 1.0
+     }
+    ],
+    "seed": 509,
+    "oracle": true,
+    "n_boxes": 6,
+    "arm": true,
+    "placed": 6,
+    "success_rate": 1.0
+   }
+  ],
+  "cycle_s": {
+   "mean": 7.75,
+   "p95": 9.39,
+   "n": 60
+  }
+ },
+ "perception_cost": 0.35,
+ "layer_roi_mm": 620.0,
+ "temporal_prior": false,
+ "arm_layout": false,
+ "layout_cfg": {
+  "base_xy": [
+   -0.6,
+   0.75
+  ],
+  "track_range": 0.6
+ }
+}

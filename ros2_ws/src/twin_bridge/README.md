@@ -39,7 +39,7 @@ ros2 topic echo /twin/state --once
 
 한 번에 끝까지(서버 기동 → 사이클 → rviz 캡처 → 서버 종료): `powershell -ExecutionPolicy Bypass -File scripts\twin_cycle_demo.ps1`.
 
-기록(12박스, UR10e + 트랙): 프레임 13, 명령 10, 배치 10, 실패 0, 남은 2개는 층 선택 미검출(LAYER_EMPTY 3회)로 종료. 시뮬 사이클 7.5 s(6.3~10.9), 픽 위치 오차(pick_err) 중앙값 7 mm,
+기록(12박스, UR10e + 트랙, 층 선택 시간 사전 켬): 프레임 13, 명령 12, 배치 12, 실패 0, 소스 소진으로 종료(사전 없이는 10/12 에서 층 선택 미검출로 종료). 시뮬 사이클 7.5 s(6.3~10.9), 픽 위치 오차(pick_err) 중앙값 7 mm,
 실행 1회 계산 1.2 s. 첫 실행에서 12개 중 6개가 놓는 순간 튕겨 나간 것을 추적해 픽 요 규약·페이로드 충돌 검사·목적지 슬롯 겹침 세 결함을 고쳤다
 (docs/42 6-c, docs/41 7절). 수치: `results/ros2_twin_cycle.json`.
 

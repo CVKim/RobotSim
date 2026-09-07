@@ -74,14 +74,18 @@ class Box:
 
 # ---------------------------------------------------------------- top layer
 
-def find_top_layer(D: np.ndarray, valid: np.ndarray, bin_mm: float = 10, roi_frac: float = 0.25) -> float:
-    """중앙 ROI 깊이 히스토그램 최대 피크 (tools/binpick_topface.find_top_layer 동일).
+def find_top_layer(D: np.ndarray, valid: np.ndarray, bin_mm: float = 10, roi_frac: float = 0.25,
+                   roi_mask: Optional[np.ndarray] = None) -> float:
+    """ROI 깊이 히스토그램 최대 피크 (tools/binpick_topface.find_top_layer 동일). roi_mask 가 있으면 화면 중앙 대신 그 영역(팔레트 XY).
 
     ROI 안에 유효 픽셀이 없으면 전체 유효 픽셀로 폴백, 그래도 없으면 NaN.
     """
     h, w = D.shape
-    roi = np.zeros_like(valid)
-    roi[int(h * roi_frac):int(h * (1 - roi_frac)), int(w * roi_frac):int(w * (1 - roi_frac))] = True
+    if roi_mask is not None:
+        roi = roi_mask
+    else:
+        roi = np.zeros_like(valid)
+        roi[int(h * roi_frac):int(h * (1 - roi_frac)), int(w * roi_frac):int(w * (1 - roi_frac))] = True
     d = D[valid & roi]
     if d.size < MIN_VALID_PX:
         d = D[valid]
@@ -98,9 +102,11 @@ def find_top_layer(D: np.ndarray, valid: np.ndarray, bin_mm: float = 10, roi_fra
     return float(np.average(centers, weights=hist[j0:j1] + 1e-9))
 
 
-def detect_top_layer(frame: Frame, tol_mm: float = 40, bin_mm: float = 10, roi_frac: float = 0.25) -> TopLayer:
+def detect_top_layer(frame: Frame, tol_mm: float = 40, bin_mm: float = 10, roi_frac: float = 0.25,
+                     roi_mm: Optional[float] = None) -> TopLayer:
     """최상층 깊이 + 최상층 마스크."""
-    depth = find_top_layer(frame.D, frame.valid, bin_mm=bin_mm, roi_frac=roi_frac)
+    roi_mask = geometry.layer_roi_mask(_sess_view(frame), roi_mm) if roi_mm is not None else None
+    depth = find_top_layer(frame.D, frame.valid, bin_mm=bin_mm, roi_frac=roi_frac, roi_mask=roi_mask)
     if not math.isfinite(depth):
         mask = np.zeros(frame.shape, dtype=bool)
     else:
@@ -183,31 +189,24 @@ def _to_box(frame: Frame, b: dict, sku, box_id: int) -> Box:
     )
 
 
-def detect_boxes(frame: Frame, sku: Optional[Sequence[float]] = DEFAULT_SKU, tol_mm: float = 40,
-                 min_area_px: int = 700, sku_tol: Optional[float] = None,
-                 top_layer: Optional[TopLayer] = None, lattice: bool = False,
-                 min_confidence: float = 0.0) -> list:
-    """최상층 박스 상면 검출 -> list[Box].
-
-    알고리즘은 robotsim_perception.geometry 한 곳에만 있다 (예전에는 여기와 tools 에 복제돼
-    있어 센티넬 오염 버그를 두 번 고쳐야 했다).
-
-    lattice  : True 면 v2 — 박스별 신뢰도 + 격자 기반 결손 보완('inferred') + 층 선택 규칙.
-               실측 30프레임 기준 v1 152 박스 vs **v2 167 박스**(RGB 대조로 검증된 실제 개수).
-               대가는 지연(52 -> 약 340 ms/프레임).
-    sku      : (L, W, H) mm. 신뢰도 계산 및 sku_tol 필터에 사용. None 이면 치수 항 제외.
-    sku_tol  : None 이면 필터 없음. 0.5 등을 주면 L,W 가 SKU 대비 ±sku_tol 밖인 후보를 제거.
-    top_layer: 미리 계산한 TopLayer 를 재사용할 때 (v1 경로에서만 사용).
-    """
+def detect_layer_and_boxes(frame: Frame, sku: Optional[Sequence[float]] = DEFAULT_SKU, tol_mm: float = 40,
+                           min_area_px: int = 700, sku_tol: Optional[float] = None,
+                           top_layer: Optional[TopLayer] = None, lattice: bool = False,
+                           min_confidence: float = 0.0, layer_roi_mm: Optional[float] = None,
+                           prior_top_mm: Optional[float] = None):
+    """detect_boxes 와 같지만 (선택된 층 깊이 mm, list[Box]) 를 돌려준다 — v2 의 층 선택 규칙이 고른 깊이는 히스토그램 최대 피크와
+    다를 수 있고, 다음 프레임의 시간 사전(prior_top_mm)으로 쓰려면 그 값이 필요하다."""
     sess = _sess_view(frame)
     if lattice:
-        _, _, raw = geometry.detect_boxes_v2(sess, tol_mm=tol_mm, min_area_px=min_area_px,
-                                             conf_min=min_confidence or None)
+        top_d, _, raw = geometry.detect_boxes_v2(sess, tol_mm=tol_mm, min_area_px=min_area_px,
+                                                 conf_min=min_confidence or None,
+                                                 layer_roi_mm=layer_roi_mm, prior_top_mm=prior_top_mm)
     else:
         if top_layer is None:
-            top_layer = detect_top_layer(frame, tol_mm=tol_mm)
+            top_layer = detect_top_layer(frame, tol_mm=tol_mm, roi_mm=layer_roi_mm)
         if not top_layer.ok:
-            return []
+            return float("nan"), []
+        top_d = float(top_layer.depth_mm)
         _, _, raw = geometry._detect_boxes_at(sess, top_layer.depth_mm,
                                               tol_mm=tol_mm, min_area_px=min_area_px)
     boxes = []
@@ -222,4 +221,27 @@ def detect_boxes(frame: Frame, sku: Optional[Sequence[float]] = DEFAULT_SKU, tol
         boxes = [b for b in boxes if b.confidence >= min_confidence]
         for i, b in enumerate(boxes):
             b.id = i
-    return boxes
+    return float(top_d), boxes
+
+
+def detect_boxes(frame: Frame, sku: Optional[Sequence[float]] = DEFAULT_SKU, tol_mm: float = 40,
+                 min_area_px: int = 700, sku_tol: Optional[float] = None,
+                 top_layer: Optional[TopLayer] = None, lattice: bool = False,
+                 min_confidence: float = 0.0, layer_roi_mm: Optional[float] = None,
+                 prior_top_mm: Optional[float] = None) -> list:
+    """최상층 박스 상면 검출 -> list[Box].
+
+    알고리즘은 robotsim_perception.geometry 한 곳에만 있다 (예전에는 여기와 tools 에 복제돼
+    있어 센티넬 오염 버그를 두 번 고쳐야 했다).
+
+    lattice  : True 면 v2 — 박스별 신뢰도 + 격자 기반 결손 보완('inferred') + 층 선택 규칙.
+               실측 30프레임 기준 v1 152 박스 vs **v2 167 박스**(RGB 대조로 검증된 실제 개수).
+               대가는 지연(52 -> 약 340 ms/프레임).
+    sku      : (L, W, H) mm. 신뢰도 계산 및 sku_tol 필터에 사용. None 이면 치수 항 제외.
+    sku_tol  : None 이면 필터 없음. 0.5 등을 주면 L,W 가 SKU 대비 ±sku_tol 밖인 후보를 제거.
+    top_layer: 미리 계산한 TopLayer 를 재사용할 때 (v1 경로에서만 사용).
+    layer_roi_mm / prior_top_mm: 층 선택 보강 (geometry.detect_boxes_v2 참조). 기본 None = 기존 동작.
+    """
+    return detect_layer_and_boxes(frame, sku=sku, tol_mm=tol_mm, min_area_px=min_area_px, sku_tol=sku_tol,
+                                  top_layer=top_layer, lattice=lattice, min_confidence=min_confidence,
+                                  layer_roi_mm=layer_roi_mm, prior_top_mm=prior_top_mm)[1]

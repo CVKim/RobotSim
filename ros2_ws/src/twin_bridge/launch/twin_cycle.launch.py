@@ -29,6 +29,8 @@ def generate_launch_description():
         DeclareLaunchArgument("rviz", default_value="true"),
         DeclareLaunchArgument("realtime_factor", default_value="1.0"),   # 트윈 TCP 경로를 시뮬 시각대로 재생 (0 = 최대 속도)
         DeclareLaunchArgument("startup_delay_s", default_value="8.0"),   # rviz2 가 뜬 뒤 첫 촬영 (캡처용; 실제 셀과 무관)
+        DeclareLaunchArgument("layer_roi_mm", default_value="0.0"),      # 층 히스토그램 영역 (0 = 화면 중앙 ROI 기존; 620 = 팔레트만 — 절제에서 이득 없어 기본 꺼짐)
+        DeclareLaunchArgument("temporal_prior", default_value="true"),   # 직전 프레임 층 깊이를 사전으로 (잔여 1~3개 층 점프 방지)
         Node(
             package="robotsim_perception_ros",
             executable="perception_node",
@@ -39,6 +41,8 @@ def generate_launch_description():
                 "rate_hz": 0.0,                 # 트리거 모드: pick_executor 가 부를 때만 프레임을 받아 처리
                 "loop": False,                  # 소스 팔레트가 비면 소진 -> DONE
                 "synthetic_remove_picked": False,   # 집은 박스는 트윈 물리가 실제로 옮긴다
+                "layer_roi_mm": ParameterValue(LaunchConfiguration("layer_roi_mm"), value_type=float),
+                "temporal_prior": ParameterValue(LaunchConfiguration("temporal_prior"), value_type=bool),
             }],
         ),
         Node(

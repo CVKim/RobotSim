@@ -113,3 +113,25 @@ def test_parity_all_sessions_v1_and_v2():
     assert (n1, n2) == (p1, p2)
     assert n1 == 152, f"v1 baseline changed: {n1} != 152"
     assert n2 == 167, f"v2 baseline changed: {n2} != 167"
+
+
+def test_temporal_prior_and_layer_roi_keep_real_parity():
+    """실측 30세션을 시간순으로 흘리며 층 사전(직전 프레임 층 깊이) + 팔레트 ROI 히스토그램을 켠 v2 가 프레임마다 기본 v2 와
+    같은 검출 수를 내고 총 167 을 유지해야 한다 — 두 보강은 트윈의 잔여 1~3개·팔 노출 실패 모드를 위한 것이고 실측을 바꾸면 안 된다.
+    층 전환(2층 → 티어시트 → 1층)에서는 사전 층에 박스가 없어 기존 규칙으로 돌아가는 것도 여기서 확인된다."""
+    from robotsim_perception import load_frame
+    from robotsim_perception.detect import detect_boxes as pkg, detect_layer_and_boxes
+
+    sessions = _all_sessions()
+    assert sessions, "no sessions"
+    prior, total, switched = None, 0, 0
+    for d in sessions:
+        fr = load_frame(d)
+        top_d, boxes = detect_layer_and_boxes(fr, lattice=True, layer_roi_mm=620.0, prior_top_mm=prior)
+        base = pkg(fr, lattice=True)
+        assert len(boxes) == len(base), f"{d.name}: with prior/roi {len(boxes)} != baseline {len(base)}"
+        if prior is not None and boxes and abs(top_d - prior) > 100:
+            switched += 1
+        prior = top_d if boxes else None
+        total += len(boxes)
+    assert total == 167, total

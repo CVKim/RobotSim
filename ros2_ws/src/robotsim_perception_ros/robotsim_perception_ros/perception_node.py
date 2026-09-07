@@ -21,6 +21,8 @@
     min_confidence    픽 후보 신뢰도 하한 (0.55)
     min_valid_frac    프레임 유효 픽셀 하한 (0.25) — 미만이면 RETAKE
     source_roi_mm     소스 팔레트 반경 (620) — 목적지 스택 제외
+    layer_roi_mm      층 히스토그램 영역 (0 = 화면 중앙 ROI, 620 = 팔레트 영역만; 카메라에 팔이 보일 때 층 선택 안정)
+    temporal_prior    직전 프레임의 층 깊이를 사전으로 (박스 1~3개 남았을 때 층 점프 방지)
     cam_height_mm     탑다운 설치 기본 외참 높이 (4183)
     extrinsics_json   T_base_cam JSON 경로 (있으면 cam_height_mm 무시)
     dest_x_mm/dest_y_mm  목적지 스택 중심 (카메라 좌표)
@@ -71,7 +73,10 @@ class PerceptionNode(Node):
             min_confidence=float(P("min_confidence", 0.55).value),
             min_valid_frac=float(P("min_valid_frac", 0.25).value),
             source_roi_mm=float(P("source_roi_mm", 620.0).value) or None,
+            layer_roi_mm=float(P("layer_roi_mm", 0.0).value) or None,       # 0 = 화면 중앙 ROI(기존). 620 이면 팔레트 영역만
+            temporal_prior=bool(P("temporal_prior", False).value),         # 직전 프레임 층 깊이를 사전으로
         )
+        self.prior_top = None
         self.stride = int(P("cloud_stride", 2).value)
         self.publish_cloud = bool(P("publish_cloud", True).value)
         cam_h = float(P("cam_height_mm", 4183.0).value)
@@ -135,7 +140,10 @@ class PerceptionNode(Node):
             return None
         frame, name = item
         t0 = time.perf_counter()
-        dec = decide(frame, self.th, sku=self.sku, dest_xy_mm=self.dest)
+        dec = decide(frame, self.th, sku=self.sku, dest_xy_mm=self.dest, prior_top_mm=self.prior_top)
+        if self.th.temporal_prior:
+            # 박스가 보인 층을 다음 프레임의 사전으로. 층이 비면(LAYER_EMPTY) 사전을 지운다 — 다음 층은 기존 규칙으로 찾는다
+            self.prior_top = dec.top_depth_mm if dec.n_boxes > 0 else None
         if self.health.ref_D is None:
             self.health.set_reference(frame)
         health = self.health.check(frame)

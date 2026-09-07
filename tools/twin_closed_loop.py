@@ -466,7 +466,7 @@ def pick_order(boxes, dest_xy_mm, col_tol=80.0):
 
 
 def run_episode(layout, seed, oracle=False, conf_min=0.0, use_footprint=True, verbose=False, arm_cfg=None,
-                arm_layout=False, layout_cfg=None):
+                arm_layout=False, layout_cfg=None, layer_roi_mm=None, temporal_prior=False):
     cell = (ArmCell(layout, seed, arm_cfg, layout_cfg=layout_cfg) if arm_cfg
             else Cell(layout, seed, arm_layout=arm_layout, layout_cfg=layout_cfg))
     rng = np.random.default_rng(10_000 + seed)
@@ -477,6 +477,7 @@ def run_episode(layout, seed, oracle=False, conf_min=0.0, use_footprint=True, ve
     log = {"picks": [], "seed": seed, "oracle": oracle, "n_boxes": n_start, "arm": bool(arm_cfg)}
     placed = 0
     stack_h = DECK_H
+    prior_top = None             # 시간 사전: 직전 프레임에서 박스가 나온 층 깊이 (temporal_prior 일 때)
     filled = set()               # 목적지에서 이미 쓴 (층, 슬롯)
     unreachable_ids = set()      # 이 에피소드에서 도달 불가로 판정된 박스 (같은 박스를 매 사이클 다시 시도하지 않게)
     try:
@@ -490,7 +491,9 @@ def run_episode(layout, seed, oracle=False, conf_min=0.0, use_footprint=True, ve
                           "ang_deg": g["ang_deg"], "normal": (0, 0, -1), "confidence": 1.0,
                           "rect_px": None} for g in gt]
             else:
-                _, _, det = detect_boxes_v2(f)
+                top_sel, _, det = detect_boxes_v2(f, layer_roi_mm=layer_roi_mm,
+                                                 prior_top_mm=(prior_top if temporal_prior else None))
+                prior_top = float(top_sel) if (det and np.isfinite(top_sel)) else None
                 boxes = [b for b in det if b.get("confidence", 0) >= conf_min]
                 for b in boxes:
                     b["center_mm"] = (b["center_mm"][0], b["center_mm"][1], b["depth_mm"])
@@ -629,6 +632,9 @@ def main():
     ap.add_argument("--arm", choices=["none", "fixed", "track"], default="none")
     ap.add_argument("--arm-layout", action="store_true",
                     help="팔 없이(mocap) 돌리되 팔 씬과 같은 설비 배치를 쓴다 — 실행기 비교를 같은 장면에서 하기 위함")
+    ap.add_argument("--layer-roi", type=float, default=0.0, help="층 히스토그램을 팔레트 영역(카메라 XY 반경 mm)으로 한정. 0 = 기존(화면 중앙)")
+    ap.add_argument("--prior", action="store_true", help="직전 프레임의 층 깊이를 다음 프레임의 사전으로 (잔여 1~3개 층 점프 방지)")
+    ap.add_argument("--tag", default="", help="결과 파일 이름 접미사 (예: _prior)")
     ap.add_argument("--verbose", action="store_true")
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
@@ -652,7 +658,7 @@ def main():
             layout = [(cells[i][0], cells[i][1], 0) for i in idx]
             log = run_episode(layout, seed=500 + e, oracle=(mode == "oracle"),
                               verbose=args.verbose, arm_cfg=arm_cfg, arm_layout=args.arm_layout,
-                              layout_cfg=layout_cfg)
+                              layout_cfg=layout_cfg, layer_roi_mm=(args.layer_roi or None), temporal_prior=args.prior)
             eps.append(log)
             print(f"  ep{e}: {log['placed']}/{log['n_boxes']} 배치 "
                   f"({', '.join(sorted({p['result'] for p in log['picks']}))})")
@@ -678,9 +684,11 @@ def main():
     print(f"\n인식 때문에 잃는 성공률: {gap:+.1%} "
           f"(oracle {results['oracle']['success_rate']:.1%} vs 인식 {results['perception']['success_rate']:.1%})")
     if args.arm != "none":
-        name = f"closed_loop_arm_{args.arm}.json"
+        name = f"closed_loop_arm_{args.arm}{args.tag}.json"
     else:
-        name = "closed_loop_mocap_armlayout.json" if args.arm_layout else "closed_loop.json"
+        name = ("closed_loop_mocap_armlayout" if args.arm_layout else "closed_loop") + args.tag + ".json"
+    results["layer_roi_mm"] = args.layer_roi or None
+    results["temporal_prior"] = bool(args.prior)
     results["arm_layout"] = bool(args.arm_layout)
     results["layout_cfg"] = ({k: (list(v) if isinstance(v, tuple) else v) for k, v in layout_cfg.items()}
                              if layout_cfg else None)

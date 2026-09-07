@@ -19,7 +19,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = [("mocap 석션\n원래 배치", ROOT / "explore/twin/closed_loop.json"),
        ("mocap 석션\n팔 자리 비움", ROOT / "explore/twin/closed_loop_mocap_armlayout.json"),
        ("UR10e\n고정 받침대", ROOT / "explore/twin/closed_loop_arm_fixed.json"),
-       ("UR10e\n트랙 ±0.6 m", ROOT / "explore/twin/closed_loop_arm_track.json")]
+       ("UR10e\n트랙 ±0.6 m", ROOT / "explore/twin/closed_loop_arm_track.json"),
+       ("mocap 석션\n+ 층 사전", ROOT / "explore/twin/closed_loop_prioronly.json"),
+       ("UR10e 트랙\n+ 층 사전", ROOT / "explore/twin/closed_loop_arm_track_prioronly.json")]
 OUT = ROOT / "assets" / "twin_closed_loop.png"
 
 for cand in (r"C:\Windows\Fonts\malgun.ttf", "/usr/share/fonts/truetype/nanum/NanumGothic.ttf"):
@@ -43,7 +45,7 @@ def main():
             data.append((name, json.loads(p.read_text(encoding="utf-8"))))
     if not data:
         raise SystemExit("no closed-loop json found")
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4.6), gridspec_kw=dict(width_ratios=[1.0, 1.6, 1.0]))
+    fig, axes = plt.subplots(1, 3, figsize=(17.5, 4.8), gridspec_kw=dict(width_ratios=[1.2, 1.6, 1.0]))
     # (a) 성공률
     ax = axes[0]
     x = np.arange(len(data))
@@ -55,7 +57,7 @@ def main():
     for b, v in list(zip(b1, orc)) + list(zip(b2, per)):
         ax.text(b.get_x() + b.get_width() / 2, v + 1.5, f"{v:.0f}%", ha="center", fontsize=9)
     ax.set_xticks(x)
-    ax.set_xticklabels([n for n, _ in data], fontsize=9)
+    ax.set_xticklabels([n for n, _ in data], fontsize=8)
     ax.set_ylim(0, 115)
     ax.set_ylabel("배치 성공률 %")
     ax.set_title(f"박스 {data[0][1]['perception']['boxes']}개 × 실행기 {len(data)}종", fontsize=10)
@@ -74,7 +76,7 @@ def main():
         ax.bar(x, vals, 0.55, bottom=bottom, label=KO.get(k, k), color=cmap(i % 20))
         bottom += vals
     ax.set_xticks(x)
-    ax.set_xticklabels([n for n, _ in data], fontsize=9)
+    ax.set_xticklabels([n for n, _ in data], fontsize=8)
     ax.set_ylabel("실패 건수 (인식 구동)")
     ax.set_title("인식 구동 실패 종류 — 어디서 잃는가", fontsize=10)
     ax.legend(fontsize=7.5, ncol=2, loc="upper left")
@@ -86,7 +88,7 @@ def main():
     for b, v, q in zip(bars, means, p95):
         ax.text(b.get_x() + b.get_width() / 2, q + 0.3, f"{v:.1f} s\n(p95 {q:.1f})", ha="center", fontsize=8.5)
     ax.set_xticks(x)
-    ax.set_xticklabels([n for n, _ in data], fontsize=9)
+    ax.set_xticklabels([n for n, _ in data], fontsize=8)
     ax.set_ylim(0, max(p95) * 1.35 if p95 else 1)
     ax.set_ylabel("픽 1회 사이클 (s, oracle)")
     ax.set_title("사이클 시간: mocap 속도 가정 vs 관절 속도 한계", fontsize=10)

@@ -8,3 +8,5 @@ ros2_ws/**  text eol=lf
 *.png       binary
 *.pdf       binary
 *.excalidraw text eol=lf
+*.db3       binary
+*.mcap      binary

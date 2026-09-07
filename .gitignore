@@ -26,3 +26,6 @@ ros2_ws/build/
 ros2_ws/install/
 ros2_ws/log/
 config.rviz
+
+# UR10e 메시 (34 MB, scripts/fetch_ur10e_meshes.py 로 받음)
+sim/assets/ur10e/assets/

@@ -10,7 +10,11 @@ README 의 수치를 검증할 수 있도록 실험 산출 JSON 을 모아 둔 �
 |---|---|
 | [detector_robustness.json](detector_robustness.json) | 기하 검출 v1 vs v2 강건성 (실측 30프레임, 교란 격자) |
 | [twin_detect_accuracy.json](twin_detect_accuracy.json) | 셀 트윈 절대 정답 기반 검출 정확도 (48장면) |
-| [twin_closed_loop.json](twin_closed_loop.json) | 셀 트윈 인식->제어 폐루프 (oracle vs 인식 구동) |
+| [twin_closed_loop.json](twin_closed_loop.json) | 셀 트윈 인식->제어 폐루프 (oracle vs 인식 구동, mocap 석션 EE) |
+| [twin_arm_reach.json](twin_arm_reach.json) | UR10e 도달·충돌·이동 시간 — 받침대 위치 sweep, 트랙, 실측 픽 포즈 167개 (프레임 익명화) |
+| [twin_closed_loop_arm_track.json](twin_closed_loop_arm_track.json) | 셀 트윈 폐루프 — UR10e + 리니어 트랙이 실제로 움직임 (IK·충돌 회피·관절 속도) |
+| [twin_closed_loop_arm_fixed.json](twin_closed_loop_arm_fixed.json) | 셀 트윈 폐루프 — UR10e 고정 받침대 (도달 불가 픽이 생기는 구성) |
+| [twin_closed_loop_mocap_armlayout.json](twin_closed_loop_mocap_armlayout.json) | 셀 트윈 폐루프 — mocap 석션을 팔 씬과 같은 설비 배치에서 (실행기 비교 기준선) |
 | [sim2real_reeval.json](sim2real_reeval.json) | 학습 모델 v2 정답 재평가 (홀드아웃 24장) |
 | [sim2real_gap.json](sim2real_gap.json) | sim2real 사다리 (합성 전용 -> 실측) |
 | [sim2real_cotrain.json](sim2real_cotrain.json) | 합성 + 실측 6장 co-training |

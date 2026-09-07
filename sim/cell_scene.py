@@ -43,9 +43,21 @@ def dest_world_xy():
     return DEST_XY_MM[0] / 1000.0, -DEST_XY_MM[1] / 1000.0
 
 
+ARM_DEFAULT = dict(base_xy=(-0.6, 0.85), pedestal_h=0.8, track_range=0.0)
+
+
 def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
-              tier_sheet=True, distractors=True):
+              tier_sheet=True, distractors=True, arm=None, static_boxes=None, arm_layout=False, layout_cfg=None):
     """layout: [(col,row,layer), ...] 소스 팔레트에 놓을 박스들. dest_stack: 목적지에 미리 쌓인 개수.
+
+    arm: None 이면 기존처럼 mocap 석션 EE. dict(base_xy, pedestal_h, track_range[, meshes]) 를 주면
+         UR10e(sim/arm.py) 를 받침대 위에 얹고 mocap EE 는 만들지 않는다. 팔이 서는 자리(+y 쪽)가 비도록
+         오른쪽 컨베이어를 y=1.25 로 옮기고 그 근처 설비 블록을 두지 않는다.
+    arm_layout: 팔은 넣지 않되 위의 배치 변경(컨베이어 이동·설비 제외)만 적용 — mocap 실행기와 팔 실행기를
+         같은 장면에서 비교하기 위한 옵션. 설비 배치가 인식 성능을 바꾸므로 실행기 비교는 같은 장면에서 해야 한다.
+    layout_cfg: 설비 제외 구역을 정하는 (base_xy, track_range). 주면 arm/arm_layout 의 값 대신 이걸 쓴다 —
+         고정 받침대·트랙·mocap 세 변형이 **정확히 같은** 설비 집합을 갖게 하려면 셋 모두에 같은 layout_cfg 를 준다
+         (검토에서 발견: 트랙 변형만 제외 구역이 넓어 에피소드마다 설비가 2~4개 적었다).
 
     반환 (xml_str, gt) — gt['boxes'] = [{'name','xyz_m','yaw_deg','layer'}...] 배치 시점 정답.
     실제 정답은 물리 안정화 후 mjData 에서 다시 읽는다 (cell_twin.settle 참조).
@@ -53,23 +65,38 @@ def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
     rng = np.random.default_rng(seed)
     j = jitter_mm / 1000.0
     hx, hy, hz = BOX[0] / 2, BOX[1] / 2, BOX[2] / 2
+    arm_parts, arm_cfg = None, None
+    if arm is not None:
+        from arm import arm_mount_xml, track_actuator_xml, ur10e_parts  # noqa: F401  (sim/ 가 sys.path 에 있음)
+        arm_cfg = dict(ARM_DEFAULT, **arm)
+        arm_parts = ur10e_parts(arm_cfg.get("meshes"))
+    elif arm_layout:
+        arm_cfg = dict(ARM_DEFAULT, **(arm_layout if isinstance(arm_layout, dict) else {}))   # 배치 변경만 (팔 없음)
+    excl_cfg = dict(arm_cfg or {}, **(layout_cfg or {})) if (arm_cfg is not None or layout_cfg) else None
+    meshdir = f' meshdir="{arm_parts["meshdir"]}"' if (arm_parts and arm_parts["meshdir"]) else ""
 
+    # 각도 단위는 radian: Menagerie UR10e 의 관절 범위가 radian 이라 팔을 끼워 넣으려면 씬 전체가 radian 이어야 한다.
     parts = [f'''<mujoco model="depal_cell">
-  <compiler angle="degree" autolimits="true"/>
+  <compiler angle="radian" autolimits="true"{meshdir}/>
   <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
   <visual>
     <headlight diffuse="0.5 0.5 0.5" ambient="0.35 0.35 0.35" specular="0.1 0.1 0.1"/>
     <global offwidth="{IMG_W}" offheight="{IMG_H}"/>
     <quality offsamples="4"/>
   </visual>
-  <asset>
+''']
+    if arm_parts:
+        parts.append(f'  <default>\n{arm_parts["default"]}\n  </default>\n')
+    parts.append('''  <asset>
     <texture name="grid" type="2d" builtin="checker" width="256" height="256"
              rgb1="0.22 0.24 0.26" rgb2="0.28 0.30 0.32"/>
     <material name="floor" texture="grid" texrepeat="8 8" reflectance="0.02"/>
     <material name="deck" rgba="0.55 0.30 0.14 1" reflectance="0.02"/>
     <material name="tier" rgba="0.30 0.32 0.36 1" reflectance="0.01"/>
     <material name="steel" rgba="0.62 0.64 0.68 1" reflectance="0.05"/>
-''']
+''')
+    if arm_parts:
+        parts.append(arm_parts["asset"] + "\n")
     # 박스마다 살짝 다른 색 — ToF 강도(I) 채널의 이음새 에지 신호를 만들기 위함
     n_box = len(layout) + dest_stack
     for i in range(n_box):
@@ -104,7 +131,8 @@ def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
         # 단일 피크가 없다. 평평한 바닥만 두면 바닥 피크가 박스 상면 피크를 이겨
         # find_top_layer 가 바닥을 최상층으로 잡는다(트윈 1차 시도에서 실제 발생).
         parts.append('    <geom name="conv_l" type="box" pos="0 -1.05 0.35" size="1.7 0.22 0.35" material="steel"/>\n')
-        parts.append('    <geom name="conv_r" type="box" pos="0 1.05 0.30" size="1.7 0.18 0.30" material="steel"/>\n')
+        conv_r_y = 1.25 if excl_cfg is not None else 1.05     # 팔 받침대 자리(+y) 확보
+        parts.append(f'    <geom name="conv_r" type="box" pos="0 {conv_r_y:.2f} 0.30" size="1.7 0.18 0.30" material="steel"/>\n')
         k = 0
         for (ex, ey) in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
             for _t in range(3):
@@ -121,6 +149,10 @@ def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
                     continue
                 if np.hypot(px - dx, py - dy) < 0.75:
                     continue
+                if excl_cfg is not None:      # 팔 받침대·트랙 주변은 비워 둔다
+                    ax, ay = excl_cfg["base_xy"]
+                    if abs(py - ay) < 0.55 and abs(px - ax) < 0.55 + float(excl_cfg.get("track_range", 0.0)):
+                        continue
                 parts.append(f'    <geom name="equip{k}" type="box" pos="{px:.3f} {py:.3f} {hzz:.3f}" '
                              f'size="{hxx:.3f} {hyy:.3f} {hzz:.3f}" material="steel"/>\n')
                 k += 1
@@ -136,7 +168,7 @@ def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
         zz = base_z + hz + layer * BOX[2] + 0.0015
         name = f"box{i}"
         parts.append(
-            f'    <body name="{name}" pos="{xx:.5f} {yy:.5f} {zz:.5f}" euler="0 0 {yaw:.3f}">\n'
+            f'    <body name="{name}" pos="{xx:.5f} {yy:.5f} {zz:.5f}" euler="0 0 {np.radians(yaw):.5f}">\n'
             f'      <freejoint name="{name}_j"/>\n'
             f'      <geom name="{name}_g" type="box" size="{hx:.4f} {hy:.4f} {hz:.4f}" '
             f'mass="6.0" material="card{i}" friction="0.9 0.02 0.001" '
@@ -151,11 +183,28 @@ def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
         x, y = grid_xy(c, r)
         add_box(i, x, y, layer, base_src, "source")
         i += 1
+    # 고정 박스(관절 없음): 실측 프레임에서 검출한 박스를 그 자리에 그대로 세울 때 쓴다 (팔 도달·충돌 평가).
+    # dict(x, y, z_top, yaw_rad, L, W) — 월드 m / rad. 높이는 SKU 높이(283 mm)로 두고 상면을 z_top 에 맞춘다.
+    for k, sb in enumerate(static_boxes or []):
+        L, W = float(sb.get("L", BOX[0])), float(sb.get("W", BOX[1]))
+        parts.append(
+            f'    <geom name="sbox{k}_g" type="box" pos="{sb["x"]:.5f} {sb["y"]:.5f} {sb["z_top"] - hz:.5f}" '
+            f'euler="0 0 {float(sb.get("yaw_rad", 0.0)):.5f}" size="{L / 2:.4f} {W / 2:.4f} {hz:.4f}" '
+            f'rgba="0.55 0.36 0.22 1"/>\n')
     for k in range(dest_stack):
         c, r = k % N_COL, (k // N_COL) % N_ROW
         x, y = grid_xy(c, r)
         add_box(i, dx + x, dy + y, k // (N_COL * N_ROW), DECK_H, "dest")
         i += 1
+
+    if arm_parts:
+        # UR10e + 흡착 툴 (sim/arm.py). 관절은 위치 서보(Menagerie 기본 gain)로 구동한다.
+        parts.append(arm_mount_xml(arm_parts, arm_cfg["base_xy"], arm_cfg["pedestal_h"],
+                                   float(arm_cfg.get("track_range", 0.0))))
+        parts.append('  </worldbody>\n\n  <actuator>\n' + arm_parts["actuator"] + "\n"
+                     + track_actuator_xml(float(arm_cfg.get("track_range", 0.0))) + '  </actuator>\n</mujoco>\n')
+        gt["arm"] = {k: (list(v) if isinstance(v, tuple) else v) for k, v in arm_cfg.items() if k != "meshes"}
+        return "".join(parts), gt
 
     # 석션 EE (mocap 구동) — 팔 기구학 없음. 흡착은 weld equality 로 모델링.
     parts.append(f'''    <body name="suction_target" pos="0 0 {DECK_H + 1.0:.4f}" quat="1 0 0 0" mocap="true">

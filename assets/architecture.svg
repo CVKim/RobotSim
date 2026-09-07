@@ -51,8 +51,8 @@
 <text x="872" y="81" font-size="13" font-weight="700" fill="#1f2937">MuJoCo 셀 디지털 트윈</text>
 <text x="872" y="106" font-size="12" fill="#1f2937">실측 역산 지오메트리 (2970 vs 2973 mm)</text>
 <text x="872" y="125" font-size="12" fill="#1f2937">절대 정답: 중심오차 8.5 / 9.8 mm</text>
-<text x="872" y="144" font-size="12" fill="#1f2937">폐루프  oracle 100%  ·  인식 구동 46.7%</text>
-<text x="872" y="163" font-size="12" fill="#1f2937">사이클 11.7 s/픽 (인식 지연 3%)</text>
+<text x="872" y="144" font-size="12" fill="#1f2937">폐루프 인식 구동: mocap 46.7% · UR10e 60% (같은 장면)</text>
+<text x="872" y="163" font-size="12" fill="#1f2937">UR10e IK·충돌: 실측 167포즈 도달 100%(트랙) · 3.1 s/픽</text>
 <rect x="860" y="250" width="300" height="150" rx="9" fill="#f7f8fa" stroke="#9aa3ad" stroke-width="1.5"/>
 <text x="872" y="271" font-size="13" font-weight="700" fill="#1f2937">검증</text>
 <text x="872" y="296" font-size="12" fill="#1f2937">30세션 전체 파리티  v1 152 / v2 167</text>
@@ -61,7 +61,7 @@
 <text x="872" y="353" font-size="12" fill="#1f2937">트윈 자체 결함 2건 실측 대조로 판정</text>
 <rect x="860" y="430" width="300" height="140" rx="9" fill="#fff5f5" stroke="#d93025" stroke-width="1.5" stroke-dasharray="6,4"/>
 <text x="872" y="451" font-size="13" font-weight="700" fill="#b91c1c">미구현 — 하드웨어 · 데이터 필요</text>
-<text x="872" y="476" font-size="12" fill="#1f2937">핸드아이 외참 실측값 · 팔 IK / 충돌</text>
+<text x="872" y="476" font-size="12" fill="#1f2937">핸드아이 외참 실측값 · 경로 계획(장애물 회피)</text>
 <text x="872" y="495" font-size="12" fill="#1f2937">줄자 GT · 혼합 SKU · 다른 조명</text>
 <text x="872" y="514" font-size="12" fill="#1f2937">잔여 ≤3개 층 선택 실패 모드</text>
 <text x="872" y="533" font-size="12" fill="#1f2937">실로봇 연결 (여기까지는 시뮬·재생)</text>

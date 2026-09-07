@@ -47,10 +47,24 @@ class SyntheticSource:
             y = (r - 1.0) * PITCH[1] + float(self.rng.normal(0, 3.0))
             boxes.append(SynthBox((x, y), depth_mm=TOP_DEPTH_MM, yaw_deg=float(self.rng.normal(0, 1.0))))
         frame = make_frame(boxes, noise_mm=self.noise_mm, seed=int(self.rng.integers(0, 1 << 30)))
+        self._last_cells_xy = [((c - 1.5) * PITCH[0], (r - 1.0) * PITCH[1]) for (c, r) in self.remaining]
         self.k += 1
-        if self.k % self.pick_every == 0:
-            self.remaining.pop()              # 픽 진행: 박스 하나 줄어든다
+        if self.auto_pop and self.k % self.pick_every == 0:
+            self.remaining.pop()              # 픽 진행: 박스 하나 줄어든다 (어느 박스인지는 임의)
         return frame, f"synthetic#{self.k}"
+
+    auto_pop = True                           # False 면 remove_nearest() 로만 박스가 줄어든다 (실제 셀처럼 '집은 박스'가 사라짐)
+
+    def remove_nearest(self, x_mm: float, y_mm: float, max_dist_mm: float = 200.0) -> bool:
+        """카메라 좌표 (x, y) 에 가장 가까운 남은 셀을 제거. 로봇이 집은 박스가 다음 프레임에서 사라지는 것을 흉내 낸다."""
+        if not self.remaining:
+            return False
+        d = [np.hypot((c - 1.5) * PITCH[0] - x_mm, (r - 1.0) * PITCH[1] - y_mm) for (c, r) in self.remaining]
+        i = int(np.argmin(d))
+        if d[i] > max_dist_mm:
+            return False
+        self.remaining.pop(i)
+        return True
 
 
 class SessionSource:

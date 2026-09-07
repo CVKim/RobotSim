@@ -78,8 +78,12 @@ class PerceptionNode(Node):
         self.cam_frame = str(P("camera_frame", "tof_optical").value)
 
         pick_every = int(P("synthetic_pick_every", 1).value)   # 합성 소스: N 프레임마다 박스 1개 제거
+        # True 면 임의 박스 대신 '계획 1번 픽' 박스를 다음 프레임에서 제거 — 인식→제어→재촬영 사이클 데모용 (pick_executor)
+        self.remove_picked = bool(P("synthetic_remove_picked", False).value)
         self.T = load_transform(ext) if ext else topdown_camera_transform(cam_h)
         self.source = make_source(self.source_spec, seed=seed, loop=loop, pick_every=pick_every)
+        if self.remove_picked and hasattr(self.source, "auto_pop"):
+            self.source.auto_pop = False
         self.health = HealthMonitor()
 
         sensor_qos = QoSProfile(reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -124,14 +128,20 @@ class PerceptionNode(Node):
         stamp = self.get_clock().now().to_msg()
 
         plan_pps = msgs.pick_poses(dec.boxes, dec.plan, self.T)
+        if self.remove_picked and dec.plan and hasattr(self.source, "remove_nearest"):
+            first = next((b for b in dec.boxes if b.id == dec.plan[0].box_id), None)
+            if first is not None:
+                self.source.remove_nearest(float(first.center_mm[0]), float(first.center_mm[1]))
         if self.publish_cloud:
             self.pub_cloud.publish(msgs.frame_to_pointcloud2(frame, stamp, self.cam_frame, self.stride))
         self.pub_markers.publish(msgs.boxes_to_markers(dec.boxes, self.T, plan_pps, stamp, self.base_frame))
         self.pub_poses.publish(msgs.poses_to_posearray(plan_pps, stamp, self.base_frame))
         if plan_pps:
             self.pub_next.publish(msgs.pose_stamped(plan_pps[0], stamp, self.base_frame))
+        # stamp 를 status JSON 에도 넣는다: 구독자(pick_executor)가 pick_poses 헤더 스탬프와 맞춰 같은 프레임인지 확인한다
         self.pub_status.publish(msgs.decision_to_string(
-            dec, {"source": name, "health": health.get("status"), "seq": self.n}))
+            dec, {"source": name, "health": health.get("status"), "seq": self.n,
+                  "stamp": [int(stamp.sec), int(stamp.nanosec)]}))
         self.pub_diag.publish(msgs.diagnostics(dec, health, stamp))
         self.n += 1
         self.get_logger().info(

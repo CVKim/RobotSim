@@ -136,11 +136,25 @@ def pose_stamped(p: PickPose, stamp, frame_id: str) -> PoseStamped:
     return ps
 
 
+MARKER_ID_POOL = 32     # 프레임마다 id 0..N-1 을 다시 쓰므로, 이번 프레임에 없는 id 는 명시적으로 DELETE 한다
+
+
+def _delete_marker(ns: str, mid: int, stamp, frame_id: str) -> Marker:
+    m = Marker()
+    m.header = header(stamp, frame_id)
+    m.ns, m.id, m.action = ns, int(mid), Marker.DELETE
+    return m
+
+
 def boxes_to_markers(boxes, T_base_cam: np.ndarray, plan_pps: Sequence[PickPose], stamp, frame_id: str,
                      ns: str = "boxes") -> MarkerArray:
     """상면 CUBE(신뢰도=투명도, inferred=주황, 계획 밖=회색) + TEXT 라벨 + 다음 픽 ARROW. 첫 요소는 DELETEALL.
 
     모든 박스를 base 좌표로 옮겨 그린다(계획에 못 든 저신뢰 박스도 위치는 보여야 운영자가 판단할 수 있다).
+
+    DELETEALL 만으로는 부족하다: rviz2(Humble) 에서 같은 MarkerArray 의 DELETEALL 뒤에 ADD 를 넣어도 이전 프레임의
+    큐브·라벨이 남는 것을 실측했다 (12 → 10 → 8 → 9 박스로 줄어드는 4프레임 뒤 화면에 라벨 12개). 그래서 이번 프레임에
+    없는 id 는 명시적으로 DELETE 마커를 함께 보낸다 (없는 id 의 DELETE 는 무해).
     """
     ma = MarkerArray()
     clear = Marker()
@@ -200,6 +214,13 @@ def boxes_to_markers(boxes, T_base_cam: np.ndarray, plan_pps: Sequence[PickPose]
         a.scale = Vector3(x=0.02, y=0.05, z=0.06)
         a.color = ColorRGBA(r=0.15, g=0.55, b=1.0, a=1.0)
         ma.markers.append(a)
+    else:
+        ma.markers.append(_delete_marker(ns + "_next", 0, stamp, frame_id))
+    used = {int(b.id) for b in boxes}
+    for i in range(max(MARKER_ID_POOL, (max(used) + 1) if used else 0)):
+        if i not in used:
+            ma.markers.append(_delete_marker(ns, i, stamp, frame_id))
+            ma.markers.append(_delete_marker(ns + "_label", i, stamp, frame_id))
     return ma
 
 
@@ -275,6 +296,10 @@ def cart_markers(res, stamp, cart_frame: str, ns: str = "cart") -> MarkerArray:
     clear.color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0)
     ma.markers.append(clear)
     if res.status != "OK":
+        # DELETEALL 이 rviz2 에서 확실히 먹지 않으므로 (boxes_to_markers 주석) 고정 id 를 명시적으로 지운다
+        for mid in range(4):
+            ma.markers.append(_delete_marker(ns, mid, stamp, cart_frame))
+        ma.markers.append(_delete_marker(ns + "_label", 4, stamp, cart_frame))
         return ma
 
     def mk(mid, mtype, rgb, scale, ns_suffix=""):

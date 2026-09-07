@@ -66,4 +66,4 @@ ros2 topic echo /cart/hook_pose --once
 
 - 실로봇·센서 드라이버 없음. `source` 는 합성 또는 파일 재생이며, 실제 셀에서는 이 자리에 센서 SDK 노드가 온다.
 - `T_base_cam` 기본값은 설치 예시일 뿐이다. 값이 틀리면 `/perception/pick_poses` 가 통째로 밀린다.
-- 픽 포즈를 **소비하는** 로봇 제어 노드는 이 패키지에 없다 (docs/42 의 실습 과제).
+- 픽 포즈를 **소비하는** 쪽은 별도 패키지 `ros2_ws/src/pick_executor` 다(3점 궤적 + 재촬영 사이클). 실제 로봇 드라이버는 없다.

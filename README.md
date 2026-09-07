@@ -23,14 +23,14 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 | sim2real / 학습 세그 | 합성 전용 0.00 → 노이즈 시뮬 0.43 → +실측 6장 0.99 · seg mAP50 0.99(무효 15%↑ 붕괴) | [상세 §4](docs/30_결과_상세.md#4-합성데이터-sim2real) · §6 |
 | 팔레타이징 RL (3시드) | MaskablePPO 64.7±0.3 vs 휴리스틱 56.6 (+14.3%) · mask 제거 43.2 | [상세 §3](docs/30_결과_상세.md#3-팔레타이징-강화학습) · `results/palletize_multiseed.json` |
 | 모방학습 · VLA | DART BC 100% (가상 Franka) · SmolVLA 파인튜닝 VRAM 4.7 GB | [상세 §5](docs/30_결과_상세.md#5-가상환경-제어모방학습-mujoco-franka) |
-| 테스트 | pytest **51** (46개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · colcon test 12 | `tests/` · `ros2_ws/.../test/` |
+| 테스트 | pytest **51** (46개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · colcon test 25 | `tests/` · `ros2_ws/.../test/` |
 
 ## 구성
 
 | 영역 | 무엇 | 어디 |
 |---|---|---|
 | 인식 패키지 | 검출(geometry) · 로봇 좌표/6-DoF 포즈(pose) · 판정 상태·드리프트(runtime) · 픽 순서(planner) · CLI/JSON | [`robotsim_perception/`](robotsim_perception/) · [docs/40](docs/40_패키지_사용법.md) |
-| ROS2 (Humble, WSL2) | `perception_node`(빈피킹: PoseArray base_link · 정적 TF) · `cart_node`(대차: 동적 TF tof_optical→cart · 도킹 목표 포즈) · status · diagnostics · Trigger 서비스 · rviz2 · colcon test 12 | [`ros2_ws/`](ros2_ws/src/robotsim_perception_ros/) · [docs/42](docs/42_ROS2_핸즈온.md) |
+| ROS2 (Humble, WSL2) | 노드 3개 — `perception_node`(빈피킹: PoseArray base_link · 정적 TF) · `cart_node`(대차: 동적 TF tof_optical→cart · 도킹 목표 포즈) · `pick_executor`(3점 로봇 명령 · 재촬영 서비스 호출로 사이클 닫음) · rviz2 · colcon test 25 | [`ros2_ws/`](ros2_ws/src/) · [docs/42](docs/42_ROS2_핸즈온.md) |
 | 셀 디지털 트윈 | 실측 역산 지오메트리 MJCF · 절대 정답 평가 · 인식 구동 픽/플레이스 폐루프 | [`sim/`](sim/) · [docs/41](docs/41_셀_트윈.md) |
 | 학습 · 시뮬 | BlenderProc/Isaac SDG · YOLO det/seg · MaskablePPO · BC/DART · SmolVLA · 로컬 VLM | [`tools/`](tools/) |
 | 검증 · 재현 | 교란 벤치 · 트윈 평가 · 전 세션 파리티 · 집계 JSON 공개 | [`tests/`](tests/) · [`results/`](results/) · [docs/21 실험로그](docs/21_실험로그.md) |
@@ -44,7 +44,7 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 
 *화면 설명: 회색 점은 ToF 점구름, 초록 판은 직접 검출한 박스 윗면, 주황 판은 격자 규칙으로 채운 칸, 회색 판은 신뢰도가 낮아 픽 계획에서 뺀 박스다.
 판 위의 작은 축은 로봇이 집을 위치와 자세(로봇 기준 좌표), 파란 화살표는 다음에 집을 박스로 들어가는 방향이다.
-빌드·실행 방법, 명령줄로 그래프를 살펴보는 법, 직접 작성할 실습 노드는 [docs/42](docs/42_ROS2_핸즈온.md)에 있다. WSL2 에서 겪은 DDS 공유메모리·시계 점프 문제와 해법도 거기에.*
+빌드·실행 방법, 명령줄로 그래프를 살펴보는 법, 제어 노드 실습(6절)은 [docs/42](docs/42_ROS2_핸즈온.md)에 있다. WSL2 에서 겪은 DDS 공유메모리·시계 점프 문제와 해법도 거기에.*
 
 두 번째 노드 `cart_node` 는 **대차 견인 고리** 데이터용이다. 카메라가 데크를 약 40° 비스듬히 보므로 탑다운 가정 대신
 데크 플레이트 평면·림·레일에서 **대차 좌표계를 매 프레임 추정**해 동적 TF(`tof_optical → cart`)와
@@ -56,6 +56,17 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 
 *화면 설명: 고정 프레임이 대차라 데크가 수평으로 보인다. 파란 판이 데크 평면, 자홍 선이 데크 앞 테두리(림, 대차 좌표의 v'=0),
 노란 선이 레일 안쪽 벽(u'=0 과 u'=레일 간격), 초록 기둥이 고리, 위쪽의 축이 카메라 위치다. 카메라 높이가 바뀌어도 고리는 대차 좌표에서 같은 자리에 잡힌다.*
+
+세 번째 노드 `pick_executor` 는 인식 결과를 **받는 쪽**이다. 픽 포즈를 pre-pick, pick, lift 세 점의 로봇 명령으로 바꿔
+`/robot/target_poses` 로 내고, 실행이 끝나면 인식 노드의 촬영 서비스를 호출해 다음 프레임을 받는다. 합성 12박스 장면을
+12사이클(2.4 초 간격)로 전부 집고 소스가 비면 스스로 멈춘다. 중간에 검출기가 두 번 "층이 비었다"고 했지만 재촬영으로 넘겼다.
+판단 로직은 ROS 없이 pytest 로 검사한다.
+
+![pick cycle](assets/ros2_pick_cycle_rviz.png)
+
+*화면 설명: 픽 네 개를 집은 뒤의 장면. 남은 박스 여덟 개 가운데 초록은 직접 검출, 주황은 격자 규칙으로 채운 칸이다. 오른쪽 위 박스 위의
+노란 선이 pre-pick(파란 점), pick(빨간 점), lift(초록 점) 세 점의 궤적이고, 보이는 두 축은 lift 와 pre-pick 자세다(pick 자세의 축은 박스 판 아래).
+노드 그래프와 실행 기록은 [docs/42 6절](docs/42_ROS2_핸즈온.md)에 있다.*
 
 ## 한계 (읽고 수치를 쓸 것)
 

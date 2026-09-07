@@ -52,8 +52,14 @@ flowchart LR
   P --> R["rviz2"]
   M --> R
   Q --> R
-  Q --> X["pick_executor<br/>(docs/42 실습 과제 — 직접 작성)"]
+  Q --> X["pick_executor<br/>3점 궤적 pre-pick·pick·lift"]
+  S --> X
+  X -->|PoseArray base_link| RT["/robot/target_poses"]
+  X -.->|std_srvs/Trigger 재촬영| N
 ```
+
+`pick_executor` 는 인식 노드의 픽 포즈를 로봇 명령(3점 궤적)으로 바꾸고, 실행이 끝나면 인식 노드의 `~/capture` 를 호출해
+인식 → 제어 → 재촬영 사이클을 닫는다(`ros2_ws/src/pick_executor/`, docs/42 6절). 판단 로직은 ROS 없이 테스트되는 순수 파이썬이다.
 
 대차(카트) 모드는 별도 노드다. 카메라가 데크를 약 40° 비스듬히 보므로 탑다운 가정을 쓸 수 없고,
 좌표계를 **대차 구조물(플레이트 평면 · 림 · 레일)** 에서 매 프레임 추정해 동적 TF 로 낸다:

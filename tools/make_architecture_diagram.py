@@ -62,11 +62,11 @@ GROUPS = [
             "pytest 51 (46개 합성만으로)",
         ]),
     ]),
-    dict(id="ros", title="ROS2 Humble (WSL2)  perception_node · cart_node — 신규", x=350, y=430, w=440, h=140, style="new", lines=[
-        "/tof/points PointCloud2 · TF base_link → tof_optical (정적)",
-        "/perception/boxes MarkerArray · /perception/pick_poses PoseArray",
-        "/cart/hook_pose · TF tof_optical → cart (동적, 대차 구조물에서 추정)",
-        "status JSON · /diagnostics · ~/capture Trigger · rviz2 · launch · 합성 소스",
+    dict(id="ros", title="ROS2 Humble (WSL2)  노드 3개: 인식 · 대차 · 제어 — 신규", x=350, y=430, w=440, h=140, style="new", lines=[
+        "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)",
+        "pick_executor: pick_poses → /robot/target_poses 3점 + 재촬영 Trigger 사이클",
+        "cart_node: /cart/hook_pose · TF tof_optical → cart (동적, 대차 구조물에서 추정)",
+        "status JSON · /diagnostics · rviz2 · launch · 합성 소스 · colcon test 25",
     ]),
     dict(id="twin", title="MuJoCo 셀 디지털 트윈", x=860, y=60, w=300, h=160, style="normal", lines=[
         "실측 역산 지오메트리 (2970 vs 2973 mm)",

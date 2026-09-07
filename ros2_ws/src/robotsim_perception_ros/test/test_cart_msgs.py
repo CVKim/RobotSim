@@ -73,7 +73,8 @@ def test_markers_only_clear_when_not_ok():
     frame.valid[:] = False
     res = analyze_cart(frame)
     ma = msgs.cart_markers(res, STAMP, "cart")
-    assert len(ma.markers) == 1 and ma.markers[0].action == Marker.DELETEALL
+    assert ma.markers[0].action == Marker.DELETEALL
+    assert all(m.action in (Marker.DELETEALL, Marker.DELETE) for m in ma.markers)      # ADD 없음, 지난 id 명시적 삭제
     da = msgs.cart_diagnostics(res, STAMP)
     assert da.status[0].level == DiagnosticStatus.ERROR
 

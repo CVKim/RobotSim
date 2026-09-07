@@ -86,7 +86,7 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 | [docs/40_패키지_사용법.md](docs/40_패키지_사용법.md) | 인식 패키지 CLI·API·JSON 스키마·테스트 |
 | [docs/41_셀_트윈.md](docs/41_셀_트윈.md) | 트윈 구성 · 찾은 결함 · **검증하지 않는 것** |
 | [docs/42_ROS2_핸즈온.md](docs/42_ROS2_핸즈온.md) | ROS2 빌드·실행·CLI 탐색·실습 과제 |
-| [docs/21_실험로그.md](docs/21_실험로그.md) | 실험 55건 시간순 (기각한 시도 포함) |
+| [docs/21_실험로그.md](docs/21_실험로그.md) | 실험 58건 시간순 (기각한 시도 포함) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 다이어그램 + 검출 파이프라인 상세 |
 | [docs/00](docs/00_하드웨어_판정.md) · [02](docs/02_환경_셋업.md) · [03](docs/03_공개전략_및_데이터보안.md) | 하드웨어 판정 · 환경 셋업 · 데이터 보안 정책 |
 | [results/](results/) | README 수치의 원본 JSON 13종 (세션 ID 익명화) |

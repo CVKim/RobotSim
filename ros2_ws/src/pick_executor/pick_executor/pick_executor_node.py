@@ -34,7 +34,9 @@ from __future__ import annotations
 import json
 
 import rclpy
-from geometry_msgs.msg import Point, Pose, PoseArray, Quaternion, Vector3
+from geometry_msgs.msg import Point, Pose, PoseArray, PoseStamped, Quaternion, Vector3
+from rclpy.action import ActionClient
+from robotsim_interfaces.action import ExecutePick
 from rclpy.clock import Clock, ClockType
 from rclpy.node import Node
 from std_msgs.msg import ColorRGBA, Header, String
@@ -118,6 +120,10 @@ class PickExecutorNode(Node):
         self.done_topic = str(P("done_topic", "").value)
         self.execute_timeout_s = float(P("execute_timeout_s", 120.0).value)
         self.trigger_capture = bool(P("trigger_capture", False).value)
+        # 액션 경로: 픽 하나가 수 초~수십 초 걸리는 장시간 작업이라 목표-피드백-결과가 붙는 액션이 원래 맞는 그릇이다.
+        # 기본은 지금까지의 토픽 경로(호환). true 면 /robot/target_poses 대신 액션으로 보내고 결과를 그 답으로 받는다.
+        self.use_action = bool(P("use_action", False).value)
+        action_name = str(P("action_name", "/robot/execute_pick").value)
         capture_service = str(P("capture_service", "/robotsim_perception/capture").value)
         startup_delay = float(P("startup_delay_s", 3.0).value)
         self.watchdog_s = float(P("watchdog_s", 10.0).value)
@@ -129,6 +135,8 @@ class PickExecutorNode(Node):
         self.pub_traj = self.create_publisher(MarkerArray, "/robot/trajectory", 10)
         self.pub_state = self.create_publisher(String, "/pick_executor/state", 10)
         self.cli = self.create_client(Trigger, capture_service) if self.trigger_capture else None
+        self.act = ActionClient(self, ExecutePick, action_name) if self.use_action else None
+        self.goal_handle = None
         self.sub_done = (self.create_subscription(String, self.done_topic, self.on_robot_done, 10)
                          if self.done_topic else None)
 
@@ -187,14 +195,20 @@ class PickExecutorNode(Node):
         if action.kind == "send":
             traj = action.trajectory
             self.last_cmd_stamp = [int(stamp.sec), int(stamp.nanosec)]   # 결과 보고의 cmd_stamp 와 대조한다
-            self.pub_targets.publish(trajectory_to_posearray(traj, stamp, self.frame_id))
+            if self.act is not None:
+                self.send_goal(traj, stamp)
+            else:
+                self.pub_targets.publish(trajectory_to_posearray(traj, stamp, self.frame_id))
             self.pub_traj.publish(trajectory_markers(traj, stamp, self.frame_id))
             pk = traj.pick
+            dest = "-> /robot/execute_pick (action goal)" if self.act is not None else "-> /robot/target_poses (3 poses)"
             self.get_logger().info(
                 f"{action.reason}: pick=({pk[0]:.3f},{pk[1]:.3f},{pk[2]:.3f}) m pre_z={traj.pre_pick[2]:.3f} "
-                f"lift_z={traj.lift[2]:.3f} -> /robot/target_poses (3 poses)")
+                f"lift_z={traj.lift[2]:.3f} {dest}")
             # 로봇 완료 보고를 기다리는 모드면 타이머는 '보고가 안 올 때' 의 안전장치(timeout)다
-            self._arm("exec_timer", self.execute_timeout_s if self.done_topic else self.execute_time_s, self.on_execute_done)
+            # 로봇 완료 보고(토픽 또는 액션 결과)를 기다리는 모드면 타이머는 '보고가 안 올 때' 의 안전장치다
+            waits_for_robot = bool(self.done_topic) or self.act is not None
+            self._arm("exec_timer", self.execute_timeout_s if waits_for_robot else self.execute_time_s, self.on_execute_done)
         elif action.kind == "busy":
             self.get_logger().debug(action.reason)
         elif action.kind in ("skip_duplicate", "skip_status", "empty"):
@@ -225,6 +239,61 @@ class PickExecutorNode(Node):
         self.get_logger().info("requesting first capture")
         self.request_capture()
 
+    # ---- 액션 경로 (use_action:=true) ---------------------------------------
+    def send_goal(self, traj, stamp):
+        """3점 궤적을 ExecutePick 목표로 보낸다. 서버가 없으면 결과를 기다리지 않고 전송 오류로 처리한다."""
+        if not self.act.wait_for_server(timeout_sec=1.0):
+            self.get_logger().error("execute_pick action server not available — treating as a transport error")
+            self._handle_robot_result({"ok": False, "result": "no_action_server"})
+            return
+
+        def stamped(p):
+            ps = PoseStamped()
+            ps.header.stamp = stamp
+            ps.header.frame_id = self.frame_id
+            ps.pose = Pose()
+            ps.pose.position = Point(x=float(p[0]), y=float(p[1]), z=float(p[2]))
+            ps.pose.orientation = Quaternion(x=float(traj.orientation[0]), y=float(traj.orientation[1]),
+                                             z=float(traj.orientation[2]), w=float(traj.orientation[3]))
+            return ps
+
+        goal = ExecutePick.Goal()
+        goal.pre_pick, goal.pick, goal.lift = stamped(traj.pre_pick), stamped(traj.pick), stamped(traj.lift)
+        goal.label = f"cmd {self.ex.counters.get('sent', 0)}"
+        fut = self.act.send_goal_async(goal, feedback_callback=self.on_goal_feedback)
+        fut.add_done_callback(self.on_goal_response)
+
+    def on_goal_response(self, future):
+        try:
+            gh = future.result()
+        except Exception as e:                                  # noqa: BLE001 — rclpy 는 여러 예외를 던진다
+            self.get_logger().error(f"send_goal failed: {e!r}")
+            self._handle_robot_result({"ok": False, "result": "action_error"})
+            return
+        if not gh.accepted:
+            self.get_logger().warn("execute_pick goal rejected (robot busy) — will retry with the next frame")
+            self._handle_robot_result({"ok": False, "result": "rejected"})
+            return
+        self.goal_handle = gh
+        gh.get_result_async().add_done_callback(self.on_goal_result)
+
+    def on_goal_feedback(self, msg):
+        fb = msg.feedback
+        self.get_logger().debug(f"{fb.phase} {fb.progress:.0%} tcp=({fb.tcp.x:.3f},{fb.tcp.y:.3f},{fb.tcp.z:.3f})")
+
+    def on_goal_result(self, future):
+        try:
+            r = future.result().result
+        except Exception as e:                                  # noqa: BLE001
+            self.get_logger().error(f"execute_pick result failed: {e!r}")
+            self._handle_robot_result({"ok": False, "result": "action_error"})
+            return
+        self.goal_handle = None
+        self._handle_robot_result({"ok": bool(r.ok), "result": str(r.result), "cycle_s": round(float(r.cycle_s), 2),
+                                   "pick_err_mm": round(float(r.pick_err_mm), 1), "remaining": int(r.remaining),
+                                   "placed": int(r.placed), "cmd_stamp": self.last_cmd_stamp})
+
+    # ---- 결과 처리 (토픽 · 액션 공통) ---------------------------------------
     def on_robot_done(self, msg: String):
         """로봇(트윈 브리지)의 실행 결과 보고. EXECUTING 중일 때만 뜻이 있다 (그 외는 늦게 온 보고 -> 무시)."""
         try:
@@ -232,6 +301,9 @@ class PickExecutorNode(Node):
         except json.JSONDecodeError:
             self.get_logger().warn(f"robot result is not JSON: {msg.data[:80]}")
             return
+        self._handle_robot_result(res)
+
+    def _handle_robot_result(self, res: dict):
         if self.ex.state != "EXECUTING":
             self.get_logger().debug(f"robot result while {self.ex.state}: ignored")
             return
@@ -253,7 +325,7 @@ class PickExecutorNode(Node):
 
     def on_execute_done(self):
         self._disarm("exec_timer")
-        if self.done_topic and self.ex.state == "EXECUTING":
+        if (self.done_topic or self.act is not None) and self.ex.state == "EXECUTING":
             self.get_logger().error(f"robot did not report completion within {self.execute_timeout_s:.0f} s — requesting a new frame")
         if self.trigger_capture:
             self.apply_action(self.ex.on_execute_done())

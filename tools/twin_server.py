@@ -31,6 +31,7 @@ sys.path.insert(0, str(ROOT / "sim"))
 sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT))
 
+from arm import JOINTS as ARM_JOINTS  # noqa: E402
 from cell_scene import BOX, CAM_H, DECK_H, N_COL, N_ROW, dest_slots, dest_world_xy, grid_xy  # noqa: E402
 from cell_twin import ground_truth  # noqa: E402
 from robotsim_perception.pose import apply, topdown_camera_transform  # noqa: E402
@@ -52,11 +53,12 @@ def quat_to_matrix(q):
 
 
 class StepRecorder:
-    """mujoco 모듈을 감싸 mj_step 마다 TCP 위치를 기록한다 (rviz 에 경로를 그리기 위해). 나머지 속성은 그대로 넘긴다."""
+    """mujoco 모듈을 감싸 mj_step 마다 TCP 위치와 관절각을 기록한다 (rviz 에 경로와 팔을 그리기 위해).
+    나머지 속성은 그대로 넘긴다."""
 
     def __init__(self, mj, cell, every: int = 25):
         self._mj, self.cell, self.every = mj, cell, int(every)
-        self.k, self.on, self.path = 0, False, []
+        self.k, self.on, self.path, self.q_path = 0, False, [], []
 
     def __getattr__(self, name):
         return getattr(self._mj, name)
@@ -66,10 +68,14 @@ class StepRecorder:
         self.k += 1
         if self.on and self.k % self.every == 0:
             p = self.cell.ee_pos()
-            self.path.append([round(self.k / CTRL_HZ, 3), round(float(p[0]), 4), round(float(p[1]), 4), round(float(p[2]), 4)])
+            t = round(self.k / CTRL_HZ, 3)
+            self.path.append([t, round(float(p[0]), 4), round(float(p[1]), 4), round(float(p[2]), 4)])
+            arm = getattr(self.cell, "arm", None)
+            if arm is not None:                       # 팔 구성일 때만: [t, q0..qn] (rviz 의 robot_state_publisher 용)
+                self.q_path.append([t] + [round(float(v), 4) for v in arm.get_q()])
 
     def start(self):
-        self.k, self.on, self.path = 0, True, []
+        self.k, self.on, self.path, self.q_path = 0, True, [], []
 
     def stop(self):
         self.on = False
@@ -98,6 +104,8 @@ class TwinServer:
         self.cell = (ArmCell(layout, self.seed, self.arm_cfg, layout_cfg=layout_cfg) if self.arm_cfg
                      else Cell(layout, self.seed, arm_layout=True, layout_cfg=layout_cfg))
         self.rec = StepRecorder(self.cell.mj, self.cell)
+        arm = getattr(self.cell, "arm", None)
+        self.joint_names = ((["track_joint"] if getattr(arm, "has_track", False) else []) + list(ARM_JOINTS)) if arm else []
         self.cell.mj = self.rec
         self.rng = np.random.default_rng(10_000 + self.seed)
         self.filled, self.placed, self.seq, self.n_exec = set(), 0, 0, 0
@@ -135,7 +143,7 @@ class TwinServer:
                                                               if self.arm_cfg else None),
                 "n_boxes": self.n_boxes, "seed": self.seed, "cam_height_mm": CAM_H * 1000.0,
                 "shape": [480, 640], "seq": self.seq, "remaining": self.remaining(), "placed": self.placed,
-                "gt_selfcheck_mm": self.gt_selfcheck_mm, "noise": self.noise}
+                "gt_selfcheck_mm": self.gt_selfcheck_mm, "noise": self.noise, "joint_names": self.joint_names}
 
     def state(self) -> dict:
         p = self.cell.ee_pos()
@@ -171,6 +179,7 @@ class TwinServer:
             self.busy = False
             out = {"ok": bool(ok), "result": result, "cycle_s": round((cell.steps - step0) / CTRL_HZ, 2),
                    "wall_s": round(time.perf_counter() - wall0, 1), "tcp_path": self.rec.stop(),
+                   "q_path": self.rec.q_path, "joint_names": self.joint_names,
                    "remaining": self.remaining(), "placed": self.placed, "seq": self.n_exec, **kw}
             self.log({"event": "execute", **{k: v for k, v in out.items() if k != "tcp_path"},
                       "pick": [round(float(v), 4) for v in pk], "yaw_deg": round(yaw, 1)})

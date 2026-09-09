@@ -24,14 +24,14 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 | sim2real / 학습 세그 | 합성 전용 0.00 → 노이즈 시뮬 0.43 → +실측 6장 0.99 · seg mAP50 0.99(무효 15%↑ 붕괴) | [상세 §4](docs/30_결과_상세.md#4-합성데이터-sim2real) · §6 |
 | 팔레타이징 RL (3시드) | MaskablePPO 64.7±0.3 vs 휴리스틱 56.6 (+14.3%) · mask 제거 43.2 | [상세 §3](docs/30_결과_상세.md#3-팔레타이징-강화학습) · `results/palletize_multiseed.json` |
 | 모방학습 · VLA | DART BC 100% (가상 Franka) · SmolVLA 파인튜닝 VRAM 4.7 GB | [상세 §5](docs/30_결과_상세.md#5-가상환경-제어모방학습-mujoco-franka) |
-| 테스트 | pytest **82** (76개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · colcon test 38 (launch_testing 통합 4 · bag 재생) | `tests/` · `ros2_ws/.../test/` |
+| 테스트 | pytest **84** (78개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · URDF↔MJCF 기구학 대조 · colcon test 39 (launch_testing 통합 5 · bag 재생) | `tests/` · `ros2_ws/.../test/` |
 
 ## 구성
 
 | 영역 | 무엇 | 어디 |
 |---|---|---|
 | 인식 패키지 | 검출(geometry) · 로봇 좌표/6-DoF 포즈(pose) · 판정 상태·드리프트(runtime) · 픽 순서(planner) · CLI/JSON | [`robotsim_perception/`](robotsim_perception/) · [docs/40](docs/40_패키지_사용법.md) |
-| ROS2 (Humble, WSL2) | 노드 6개 — `perception_node`(빈피킹: PoseArray base_link · 정적 TF) · `cart_node`(대차: 동적 TF tof_optical→cart · 도킹 목표 포즈) · `pick_executor`(3점 로봇 명령 · 재촬영 서비스 호출 · 로봇 완료 보고 대기) · `twin_bridge`(MuJoCo 트윈을 로봇 드라이버·카메라 자리에 연결) · `dock_node`+`agv_sim_node`(고리 포즈 → AGV 도킹, stop-and-go) · rviz2 · launch_testing 통합 테스트 · ros2 bag 기록/재생 · colcon test 38 | [`ros2_ws/`](ros2_ws/src/) · [docs/42](docs/42_ROS2_핸즈온.md) |
+| ROS2 (Humble, WSL2) | 노드 6개 — `perception_node`(빈피킹: PoseArray base_link · 정적 TF) · `cart_node`(대차: 동적 TF tof_optical→cart · 도킹 목표 포즈) · `pick_executor`(3점 로봇 명령 · 재촬영 서비스 호출 · 로봇 완료 보고 대기) · `twin_bridge`(MuJoCo 트윈을 로봇 드라이버·카메라 자리에 연결) · `dock_node`+`agv_sim_node`(고리 포즈 → AGV 도킹, stop-and-go) · 커스텀 인터페이스 패키지 `robotsim_interfaces`(픽 실행 **액션** · 도킹 상태 메시지) · URDF + robot_state_publisher 로 rviz 에 팔 · YAML 파라미터 파일 · TF 를 **쓰는** 좌표 검사 · rviz2 · launch_testing 통합 테스트 5 · ros2 bag 기록/재생 · colcon test 39 | [`ros2_ws/`](ros2_ws/src/) · [docs/42](docs/42_ROS2_핸즈온.md) |
 | 셀 디지털 트윈 | 실측 역산 지오메트리 MJCF · 절대 정답 평가 · 인식 구동 픽/플레이스 폐루프 · UR10e 팔(IK·충돌·관절 속도) 도달 분석 | [`sim/`](sim/) · [docs/41](docs/41_셀_트윈.md) |
 | 학습 · 시뮬 | BlenderProc/Isaac SDG · YOLO det/seg · MaskablePPO · BC/DART · SmolVLA · 로컬 VLM | [`tools/`](tools/) |
 | 검증 · 재현 | 교란 벤치 · 트윈 평가 · 전 세션 파리티 · 집계 JSON 공개 | [`tests/`](tests/) · [`results/`](results/) · [docs/21 실험로그](docs/21_실험로그.md) |
@@ -88,8 +88,15 @@ stop-and-go 로 바꿨다 — 저속 도킹에서 측정과 구동을 동기화�
 
 ![twin cycle](assets/ros2_twin_cycle_rviz.png)
 
-*화면 설명: 세 번째 픽이 실행되는 중. 초록·주황 판은 인식 노드가 본 남은 박스, 왼쪽 위 박스 위의 노란 세 점이 이번 명령(pre-pick·pick·lift), 하늘색
-선이 트윈 팔 끝(TCP)이 지나온 경로, 주황 구가 지금 팔 끝 위치(TF `tcp`)다. 오른쪽 위 점구름 덩어리가 팔 받침대와 트랙이다. 기록은 [docs/42 6-c](docs/42_ROS2_핸즈온.md).*
+*화면 설명: 세 번째 픽이 실행되는 중이다. 파란 팔이 트윈의 UR10e 로, 트윈이 보낸 관절각을 `/joint_states` 로 받아 URDF 로 그린 것이다.
+초록·주황 판은 인식 노드가 본 남은 박스(직접 검출 / 격자 보완), 하늘색 선은 팔 끝(TCP)이 지나온 경로, 노란 세 점은 이번 명령의
+pre-pick·pick·lift, 작은 축들은 링크 좌표계다. 기록은 [docs/42 6-c](docs/42_ROS2_핸즈온.md).*
+
+명령을 주고받는 형태도 두 가지다. 기본은 토픽(`/robot/target_poses` + 결과 JSON)이고, `use_action:=true` 를 주면 같은 사이클이
+**액션** `/robot/execute_pick`(`robotsim_interfaces/ExecutePick`)으로 돈다. 픽 하나가 수 초에서 수십 초 걸리는 장시간 작업이라
+목표 하나에 결과 하나가 붙고 진행 피드백이 오는 액션이 원래 맞는 그릇이다. 두 경로 모두 12박스를 12회 명령·12개 배치로 비웠다.
+rviz 의 팔이 트윈과 같은 자세인지는 눈이 아니라 테스트가 본다 — URDF 순기구학과 MuJoCo 순기구학의 팔 끝 차이가 0.1 mm 미만
+([docs/42 6-e](docs/42_ROS2_핸즈온.md)).
 
 ## 한계 (읽고 수치를 쓸 것)
 
@@ -119,7 +126,7 @@ stop-and-go 로 바꿨다 — 저속 도킹에서 측정과 구동을 동기화�
 ```powershell
 E:\Robot_Sim\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu126
-python -m pytest tests -q                                          # 82 passed (실측 데이터가 없으면 6건 skip, mujoco 가 없으면 팔 7건 skip)
+python -m pytest tests -q                                          # 84 passed (실측 데이터가 없으면 6건 skip, mujoco 가 없으면 팔·URDF 9건 skip)
 python -m robotsim_perception run <session_dir> --lattice --json out.json --overlay out.png
 .venv\Scripts\python.exe tools/twin_detect_eval.py --scenes 24   # 트윈 절대 정확도
 .venv\Scripts\python.exe tools/twin_closed_loop.py --episodes 10  # 폐루프

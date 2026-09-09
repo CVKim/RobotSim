@@ -1,0 +1,19 @@
+# 픽 한 번을 로봇(여기서는 MuJoCo 셀 트윈)에 시키고 끝날 때까지 따라가는 계약.
+# 토픽으로 명령을 던지고 결과 JSON 을 받던 방식과 달리, 목표 하나에 결과 하나가 붙고 도중에 취소·진행 보고가 가능하다.
+# 세 점은 모두 같은 프레임(보통 base_link)이어야 하고, 자세는 pick 의 것을 쓴다(툴 +Z = 접근 방향).
+geometry_msgs/PoseStamped pre_pick      # 박스 위 접근점
+geometry_msgs/PoseStamped pick          # 흡착 지점 (상면 중심)
+geometry_msgs/PoseStamped lift          # 들어 올린 뒤 위치
+string label                            # 로그용 이름 (예: "frame 7 box 3")
+---
+bool ok                                 # placed 로 끝났는가
+string result                           # placed | misplaced | grasp_miss | ik_unreachable | path_collision | descent_* | place_* | bridge_error
+float32 cycle_s                         # 시뮬레이터 안에서 흐른 시간
+float32 pick_err_mm                     # 명령한 픽 위치 vs 실제로 집은 박스 상면 중심 (좌표계가 어긋나면 커진다)
+float32 place_err_mm                    # 목적지 슬롯 중심 vs 실제로 놓인 자리
+int32 remaining                         # 소스 팔레트에 남은 박스 (정답)
+int32 placed                            # 지금까지 놓은 박스
+---
+string phase                            # accepted | executing | replaying
+float32 progress                        # 0~1 (재생 구간에서만 의미 있음)
+geometry_msgs/Point tcp                 # 현재 TCP 위치 (base_link)

@@ -740,14 +740,14 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "열 스캔 규칙 (실제 81% 일치)\nJSON 스키마 1.0 · CLI\n지연 v1 52 ms / v2 340 ms\npytest 82 (76개는 회사 데이터 없이)",
+   "text": "열 스캔 규칙 (실제 81% 일치)\nJSON 스키마 1.0 · CLI\n지연 v1 52 ms / v2 340 ms\npytest 84 (78개는 회사 데이터 없이)",
    "fontSize": 12.5,
    "fontFamily": 1,
    "textAlign": "left",
    "verticalAlign": "top",
    "baseline": 12.5,
    "containerId": null,
-   "originalText": "열 스캔 규칙 (실제 81% 일치)\nJSON 스키마 1.0 · CLI\n지연 v1 52 ms / v2 340 ms\npytest 82 (76개는 회사 데이터 없이)",
+   "originalText": "열 스캔 규칙 (실제 81% 일치)\nJSON 스키마 1.0 · CLI\n지연 v1 52 ms / v2 340 ms\npytest 84 (78개는 회사 데이터 없이)",
    "lineHeight": 1.25
   },
   {
@@ -847,14 +847,14 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)\npick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기\ncart_node: hook_pose · 동적 TF → dock_node+agv_sim 도킹  ·  twin_bridge: 트윈 (TCP)\nstatus JSON · rviz2 · launch_testing 통합 4 · ros2 bag · colcon test 38",
+   "text": "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)\npick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기\ncart_node: hook_pose · 동적 TF → dock_node+agv_sim 도킹  ·  twin_bridge: 트윈 (TCP)\n인터페이스: ExecutePick 액션 · DockState · URDF/rviz 팔 · colcon test 39",
    "fontSize": 13,
    "fontFamily": 1,
    "textAlign": "left",
    "verticalAlign": "top",
    "baseline": 13,
    "containerId": null,
-   "originalText": "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)\npick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기\ncart_node: hook_pose · 동적 TF → dock_node+agv_sim 도킹  ·  twin_bridge: 트윈 (TCP)\nstatus JSON · rviz2 · launch_testing 통합 4 · ros2 bag · colcon test 38",
+   "originalText": "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)\npick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기\ncart_node: hook_pose · 동적 TF → dock_node+agv_sim 도킹  ·  twin_bridge: 트윈 (TCP)\n인터페이스: ExecutePick 액션 · DockState · URDF/rviz 팔 · colcon test 39",
    "lineHeight": 1.25
   },
   {

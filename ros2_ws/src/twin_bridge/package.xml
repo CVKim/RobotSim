@@ -11,8 +11,11 @@
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
   <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <exec_depend>robot_state_publisher</exec_depend>
   <depend>visualization_msgs</depend>
   <depend>tf2_ros</depend>
+  <depend>robotsim_interfaces</depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>robotsim_perception_ros</exec_depend>

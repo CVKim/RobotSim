@@ -12,7 +12,7 @@ setup(
         ("share/ament_index/resource_index/packages", [f"resource/{package_name}"]),
         (f"share/{package_name}", ["package.xml"]),
         (f"share/{package_name}/launch", glob("launch/*.launch.py")),
-        (f"share/{package_name}/config", glob("config/*.rviz")),
+        (f"share/{package_name}/config", glob("config/*.rviz") + glob("config/*.yaml")),
     ],
     install_requires=["setuptools"],
     # colcon 은 test 의존성에 pytest 가 있어야 pytest 러너를 고른다 (없으면 unittest -> 0 tests).

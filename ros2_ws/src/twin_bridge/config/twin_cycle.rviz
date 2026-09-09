@@ -18,6 +18,19 @@ Visualization Manager:
       Plane Cell Count: 16
       Color: 110; 110; 110
       Reference Frame: <Fixed Frame>
+    - Class: rviz_default_plugins/RobotModel
+      Enabled: true
+      Name: UR10e (twin)
+      Description Source: Topic
+      Description Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /robot_description
+      Alpha: 1
+      Visual Enabled: true
+      Collision Enabled: false
     - Class: rviz_default_plugins/TF
       Enabled: true
       Name: TF
@@ -105,13 +118,13 @@ Visualization Manager:
     Current:
       Class: rviz_default_plugins/Orbit
       Name: Current View
-      Distance: 2.3
+      Distance: 3.9
       Focal Point:
-        X: -0.1
-        Y: 0.0
+        X: -0.25
+        Y: 0.05
         Z: 1.2
-      Pitch: 0.95
-      Yaw: 0.7
+      Pitch: 0.62
+      Yaw: 0.62
       Near Clip Distance: 0.01
       Target Frame: <Fixed Frame>
     Saved: ~

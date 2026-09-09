@@ -11,7 +11,7 @@ JSON 에 넣지 않고 np.savez_compressed 바이트를 blob 으로 붙인다.
   execute  pre_pick, pick, lift [m, base_link],     result(placed|misplaced|grasp_miss|ik_unreachable|path_collision|
            quat [x,y,z,w], frame_id                 descent_*|place_*), cycle_s(시뮬), pick_err_mm(명령 픽 위치 vs 집은 박스
                                                     상면 중심 — 좌표계가 어긋나면 이 값이 커진다), place_err_mm, gap_mm, held,
-                                                    tcp_path[[t,x,y,z]...]
+                                                    tcp_path[[t,x,y,z]...], q_path[[t,q0..qn]...], joint_names[...]
   state    -                                        remaining, placed, tcp[x,y,z], q[관절], busy
   reset    seed, n_boxes                            hello 와 같음
 

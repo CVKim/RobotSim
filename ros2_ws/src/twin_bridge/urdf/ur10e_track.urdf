@@ -1,0 +1,145 @@
+<?xml version="1.0"?>
+<!-- tools/make_ur10e_urdf.py 가 sim/assets/ur10e/ur10e.xml(MJCF, Menagerie BSD-3)에서 생성한다. 손으로 고치지 말 것. -->
+<robot name="ur10e_track">
+  <link name="base_link"/>
+  <link name="pedestal">
+    <visual>
+      <origin xyz="0.0000 0.0000 0.5400" rpy="0 0 0"/>
+      <geometry><cylinder length="1.0800" radius="0.1600"/></geometry>
+      <material name="pedestal_m"><color rgba="0.50 0.52 0.55 1"/></material>
+    </visual>
+  </link>
+  <joint name="pedestal_fixed" type="fixed">
+    <parent link="base_link"/><child link="pedestal"/>
+    <origin xyz="-0.600000 0.750000 0.000000" rpy="0.000000 -0.000000 0.000000"/>
+  </joint>
+  <link name="rail">
+    <visual>
+      <origin xyz="0.0000 0.0000 0.0000" rpy="0 0 0"/>
+      <geometry><cylinder length="0.0600" radius="0.0500"/></geometry>
+      <material name="rail_m"><color rgba="0.35 0.36 0.38 1"/></material>
+    </visual>
+  </link>
+  <joint name="rail_fixed" type="fixed">
+    <parent link="pedestal"/><child link="rail"/>
+    <origin xyz="0.000000 0.000000 1.110000" rpy="0.000000 -0.000000 0.000000"/>
+  </joint>
+  <link name="carriage">
+    <visual>
+      <origin xyz="0.0000 0.0000 0.0300" rpy="0 0 0"/>
+      <geometry><cylinder length="0.0600" radius="0.1800"/></geometry>
+      <material name="carriage_m"><color rgba="0.30 0.30 0.32 1"/></material>
+    </visual>
+  </link>
+  <joint name="track_joint" type="prismatic">
+    <parent link="rail"/><child link="carriage"/>
+    <origin xyz="0.000000 0.000000 0.030000" rpy="0.000000 -0.000000 0.000000"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.600" upper="0.600" effort="3000" velocity="1.0"/>
+  </joint>
+  <link name="ur_base">
+    <visual>
+      <origin xyz="0.0000 0.0000 0.0600" rpy="0 0 0"/>
+      <geometry><cylinder length="0.1200" radius="0.0800"/></geometry>
+      <material name="ur_base_m"><color rgba="0.28 0.28 0.28 1"/></material>
+    </visual>
+  </link>
+  <joint name="ur_base_fixed" type="fixed">
+    <parent link="carriage"/><child link="ur_base"/>
+    <origin xyz="0.000000 0.000000 0.060000" rpy="0.000000 0.000000 3.141593"/>
+  </joint>
+  <link name="shoulder_link">
+    <visual>
+      <origin xyz="0.0000 0.0880 0.0000" rpy="-1.570796 -0.000000 0.000000"/>
+      <geometry><cylinder length="0.1760" radius="0.0750"/></geometry>
+      <material name="shoulder_link_m"><color rgba="0.82 0.82 0.82 1"/></material>
+    </visual>
+  </link>
+  <joint name="shoulder_pan_joint" type="revolute">
+    <parent link="ur_base"/><child link="shoulder_link"/>
+    <origin xyz="0.000000 0.000000 0.181000" rpy="0.000000 -0.000000 0.000000"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-6.28319" upper="6.28319" effort="330.0" velocity="3.14"/>
+  </joint>
+  <link name="upper_arm_link">
+    <visual>
+      <origin xyz="0.0000 -0.0685 0.3065" rpy="0.219878 -0.000000 0.000000"/>
+      <geometry><cylinder length="0.6281" radius="0.0750"/></geometry>
+      <material name="upper_arm_link_m"><color rgba="0.49 0.678 0.8 1"/></material>
+    </visual>
+  </link>
+  <joint name="shoulder_lift_joint" type="revolute">
+    <parent link="shoulder_link"/><child link="upper_arm_link"/>
+    <origin xyz="0.000000 0.176000 0.000000" rpy="-0.000000 1.570796 0.000000"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-6.28319" upper="6.28319" effort="330.0" velocity="3.14"/>
+  </joint>
+  <link name="forearm_link">
+    <visual>
+      <origin xyz="0.0000 0.0000 0.2855" rpy="0.000000 0.000000 0.000000"/>
+      <geometry><cylinder length="0.5710" radius="0.0750"/></geometry>
+      <material name="forearm_link_m"><color rgba="0.49 0.678 0.8 1"/></material>
+    </visual>
+  </link>
+  <joint name="elbow_joint" type="revolute">
+    <parent link="upper_arm_link"/><child link="forearm_link"/>
+    <origin xyz="0.000000 -0.137000 0.613000" rpy="0.000000 -0.000000 0.000000"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.14150" upper="3.14150" effort="330.0" velocity="3.14"/>
+  </joint>
+  <link name="wrist_1_link">
+    <visual>
+      <origin xyz="0.0000 0.0675 0.0000" rpy="-1.570796 -0.000000 0.000000"/>
+      <geometry><cylinder length="0.1350" radius="0.0500"/></geometry>
+      <material name="wrist_1_link_m"><color rgba="0.82 0.82 0.82 1"/></material>
+    </visual>
+  </link>
+  <joint name="wrist_1_joint" type="revolute">
+    <parent link="forearm_link"/><child link="wrist_1_link"/>
+    <origin xyz="0.000000 0.000000 0.571000" rpy="-0.000000 1.570796 0.000000"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-6.28319" upper="6.28319" effort="330.0" velocity="3.14"/>
+  </joint>
+  <link name="wrist_2_link">
+    <visual>
+      <origin xyz="0.0000 0.0000 0.0600" rpy="0.000000 0.000000 0.000000"/>
+      <geometry><cylinder length="0.1200" radius="0.0500"/></geometry>
+      <material name="wrist_2_link_m"><color rgba="0.82 0.82 0.82 1"/></material>
+    </visual>
+  </link>
+  <joint name="wrist_2_joint" type="revolute">
+    <parent link="wrist_1_link"/><child link="wrist_2_link"/>
+    <origin xyz="0.000000 0.135000 0.000000" rpy="0.000000 -0.000000 0.000000"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-6.28319" upper="6.28319" effort="330.0" velocity="3.14"/>
+  </joint>
+  <link name="wrist_3_link">
+    <visual>
+      <origin xyz="0.0000 0.0500 0.0000" rpy="-1.570796 -0.000000 0.000000"/>
+      <geometry><cylinder length="0.1000" radius="0.0500"/></geometry>
+      <material name="wrist_3_link_m"><color rgba="0.82 0.82 0.82 1"/></material>
+    </visual>
+  </link>
+  <joint name="wrist_3_joint" type="revolute">
+    <parent link="wrist_2_link"/><child link="wrist_3_link"/>
+    <origin xyz="0.000000 0.000000 0.120000" rpy="0.000000 -0.000000 0.000000"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-6.28319" upper="6.28319" effort="330.0" velocity="3.14"/>
+  </joint>
+  <link name="tool">
+    <visual>
+      <origin xyz="0.0000 0.0000 0.0750" rpy="0.000000 0.000000 0.000000"/>
+      <geometry><cylinder length="0.1500" radius="0.0500"/></geometry>
+      <material name="tool_m"><color rgba="0.82 0.82 0.82 1"/></material>
+    </visual>
+  </link>
+  <joint name="tool_fixed" type="fixed">
+    <parent link="wrist_3_link"/><child link="tool"/>
+    <origin xyz="0.000000 0.100000 0.000000" rpy="-1.570796 -0.000000 0.000000"/>
+  </joint>
+  <link name="tcp"/>
+  <joint name="tcp_fixed" type="fixed">
+    <parent link="tool"/><child link="tcp"/>
+    <origin xyz="0.000000 0.000000 0.150000" rpy="0.000000 -0.000000 0.000000"/>
+  </joint>
+</robot>

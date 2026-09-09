@@ -1,0 +1,35 @@
+# 도킹 폐루프 파라미터. launch 인자로 흩어져 있던 값을 한곳에 모은 것 —
+#   ros2 launch robotsim_perception_ros dock.launch.py params_file:=/경로/dock_params.yaml
+# 돌고 있는 노드의 실제 값은 `ros2 param dump /dock_node` 로 확인한다(이 파일과 같아야 한다).
+# 노드 이름이 키다. 이름을 바꿔 띄우면(namespace 포함) 여기 키도 같이 바꿔야 값이 먹는다.
+
+/dock_node:
+  ros__parameters:
+    dock_v_mm: -200.0        # 결합 자리: 고리가 카메라 앞 200 mm, 정면(u 0), 요 0
+    lookahead_mm: 250.0      # 중심선 위 추종점까지의 거리
+    v_max_mm_s: 150.0
+    w_max_rad_s: 0.5
+    tol_u_mm: 10.0           # 결합 판정 허용치 (제어기 자기 측정 기준)
+    tol_v_mm: 10.0
+    tol_yaw_deg: 2.0
+    watchdog_s: 3.0          # 측정이 이만큼 끊기면 정지하고 다시 촬영을 요청
+    trigger_capture: true    # stop-and-go: AGV 가 멈춘 뒤에 다음 프레임을 찍는다
+    capture_service: /robotsim_cart/capture
+    startup_delay_s: 2.0
+    tf_check: true           # tf2 로 옮긴 고리 위치를 인식 노드 값과 대조 (DockState.tf_check_mm)
+    cart_frame: cart
+
+/agv_sim:
+  ros__parameters:
+    init_hook_u_mm: -80.0    # 시작 자세 (AGV 기준 고리 위치)
+    init_rim_v_mm: -450.0
+    init_yaw_deg: 5.0
+    rate_hz: 20.0
+    cmd_hold_s: 0.5          # 명령 하나를 이만큼만 적용하고 멈춘다 (0 이면 연속 주행)
+    cmd_timeout_s: 1.0
+
+/robotsim_cart:
+  ros__parameters:
+    source: synthetic_dock   # AGV 자세로 대차 장면을 렌더하는 합성 소스
+    rate_hz: 0.0             # 0 = 트리거 모드 (dock_node 가 촬영을 요청)
+    publish_cloud: true

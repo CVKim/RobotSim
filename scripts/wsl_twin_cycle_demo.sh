@@ -9,6 +9,7 @@ HOST="${1:-}"; [ "$HOST" = "-" ] && HOST=""      # "-" 또는 비면 launch 가 
 OUT_RVIZ="${2:-/mnt/e/Robot_Sim/assets/ros2_twin_cycle_rviz.png}"
 LOG="${3:-/mnt/e/Robot_Sim/explore/ros2/twin_cycle.log}"
 MAX_WAIT="${4:-1500}"
+USE_ACTION="${5:-false}"      # true 면 픽 명령을 액션(/robot/execute_pick)으로 주고받는다
 WS=/mnt/e/Robot_Sim/ros2_ws
 # shellcheck disable=SC1091
 source /opt/ros/humble/setup.bash
@@ -33,12 +34,12 @@ sleep 2
 : > "$LOG"
 ros2 daemon stop >/dev/null 2>&1 || true
 HOST_ARG=""; [ -n "$HOST" ] && HOST_ARG="host:=$HOST"
-DISPLAY=:99 setsid ros2 launch twin_bridge twin_cycle.launch.py $HOST_ARG >> "$LOG" 2>&1 &
+DISPLAY=:99 setsid ros2 launch twin_bridge twin_cycle.launch.py $HOST_ARG use_action:="$USE_ACTION" >> "$LOG" 2>&1 &
 LAUNCH=$!
 
 # 세 번째 명령이 실행(실시간 재생)되는 중간에 캡처: 'cmd #3:' 로그를 기다린 뒤 4 초. 그 전에 DONE 이 나거나 launch 가 죽으면 바로 캡처
 for i in $(seq 1 120); do
-    if grep -qE 'cmd #3:|DONE|process has died' "$LOG" 2>/dev/null; then break; fi
+    if grep -qE 'cmd #3:|goal #3 |DONE|process has died' "$LOG" 2>/dev/null; then break; fi   # 액션 경로는 'goal #3' 로 찍힌다
     if ! kill -0 "$LAUNCH" 2>/dev/null; then echo "launch exited early"; break; fi
     sleep 2
 done

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """launch_testing 통합 테스트: 대차 도킹 폐루프 세 노드(cart_node 합성 대차, dock_node, agv_sim_node)를 띄워 결합 위치에 도달하는지 본다.
 
-검사: /dock/state 가 docked=true 가 되고, 그 시점의 (측정) 오차가 허용치 안이며, /agv/rel_pose 의 정답 포즈도 허용치(+인식 오차 여유) 안.
+검사: /dock/state (robotsim_interfaces/DockState) 가 docked=true 가 되고, 그 시점의 (측정) 오차가 허용치 안이며,
+/agv/rel_pose 의 정답 포즈도 허용치(+인식 오차 여유) 안. 덧붙여 좌표 변환 사슬 검사 — dock_node 가 tf2 로 /cart/hook_pose 를
+대차 프레임으로 옮긴 값이 cart_node 가 낸 hook_cart_mm 과 1 mm 안에서 같아야 한다(TF 규약이 틀리면 여기서 걸린다).
 시작 자세는 인식 범위(림 거리 ≤ 500 mm) 안에서 측방 120 mm, 요 −6° 로 준다. 합성 장면만 쓰므로 회사 데이터 없이 돈다."""
 import json
 import os
@@ -16,6 +18,7 @@ import launch_testing.asserts
 import pytest
 import rclpy
 from launch_ros.actions import Node
+from robotsim_interfaces.msg import DockState
 from std_msgs.msg import String
 
 WS = Path(__file__).resolve().parents[3]
@@ -46,20 +49,23 @@ class TestDocking(unittest.TestCase):
 
     def test_agv_docks(self, proc_output):
         states, poses = [], []
-        self.node.create_subscription(String, "/dock/state", lambda m: states.append(json.loads(m.data)), 50)
+        self.node.create_subscription(DockState, "/dock/state", states.append, 50)
         self.node.create_subscription(String, "/agv/rel_pose", lambda m: poses.append(json.loads(m.data)), 50)
         deadline = time.monotonic() + 90.0
         while time.monotonic() < deadline:
             rclpy.spin_once(self.node, timeout_sec=0.2)
-            if states and states[-1].get("docked"):
+            if states and states[-1].docked:
                 break
         self.assertTrue(states, "no /dock/state")
         final = states[-1]
-        self.assertTrue(final.get("docked"), f"not docked: {final}")
-        e = final.get("errors") or {}
-        self.assertLess(abs(e.get("e_u", 99)), 10.0 + 1e-6)
-        self.assertLess(abs(e.get("e_v", 99)), 10.0 + 1e-6)
-        self.assertLess(abs(e.get("e_yaw", 99)), 2.0 + 1e-6)
+        self.assertTrue(final.docked, f"not docked: mode={final.mode} frames={final.frames} misses={final.misses}")
+        self.assertLess(abs(final.e_u_mm), 10.0 + 1e-6)
+        self.assertLess(abs(final.e_v_mm), 10.0 + 1e-6)
+        self.assertLess(abs(final.e_yaw_deg), 2.0 + 1e-6)
+        # 좌표 변환 사슬: TF 로 옮긴 고리 위치가 인식 노드의 대차 좌표와 같아야 한다 (한 번이라도 잰 프레임이 있어야 한다)
+        checked = [s.tf_check_mm for s in states if s.tf_check_mm >= 0.0]
+        self.assertTrue(checked, "tf check never ran — /cart/hook_pose 나 TF cart <- tof_optical 가 없었다")
+        self.assertLess(max(checked), 1.0, f"TF 로 옮긴 고리 위치가 status 와 {max(checked):.2f} mm 어긋난다")
         self.assertTrue(poses, "no /agv/rel_pose")
         # 정답 포즈: 요 0 근처, 고리가 정면·결합 거리 근처 (인식 오차 여유 15 mm / 3°)
         rp = poses[-1]

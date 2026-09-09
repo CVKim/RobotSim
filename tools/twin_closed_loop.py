@@ -17,7 +17,12 @@
                        경로에서 팔이 박스·설비에 닿으면 '경로 충돌' 로 그 픽을 건너뛴다. 사이클 시간은 관절 속도로 정해진다.
                        fixed 는 받침대 고정(results/twin_arm_reach.json 의 최적 위치), track 은 x 방향 리니어 트랙 ±0.6 m.
 
-실행:  .venv\\Scripts\\python.exe tools/twin_closed_loop.py --episodes 8 [--arm track]
+주요 옵션:
+  --prior            층 선택 시간 사전 — 직전 프레임에서 고른 층 깊이를 다음 프레임의 후보로 준다(폐루프 43.3 -> 78.3%, 트랙 65 -> 75%).
+  --layer-roi MM     층 히스토그램을 팔레트 ROI 로 한정(절제 실험: 단독 이득 없음).
+  --arm none|fixed|track,  --tag 접미사   (결과는 results/twin_closed_loop<접미사>.json)
+
+실행:  .venv\\Scripts\\python.exe tools/twin_closed_loop.py --episodes 8 [--arm track] [--prior]
 """
 from __future__ import annotations
 

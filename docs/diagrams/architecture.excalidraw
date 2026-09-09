@@ -728,7 +728,7 @@
    "y": 282,
    "strokeColor": "#1e1e1e",
    "backgroundColor": "transparent",
-   "width": 185.0,
+   "width": 235.8,
    "height": 62.5,
    "seed": 1176272277,
    "groupIds": [
@@ -740,14 +740,14 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "열 스캔 규칙 (실제 81% 일치)\nJSON 스키마 1.0 · CLI\n지연 v1 52 ms / v2 340 ms\npytest 51 (46개 합성만으로)",
+   "text": "열 스캔 규칙 (실제 81% 일치)\nJSON 스키마 1.0 · CLI\n지연 v1 52 ms / v2 340 ms\npytest 82 (76개는 회사 데이터 없이)",
    "fontSize": 12.5,
    "fontFamily": 1,
    "textAlign": "left",
    "verticalAlign": "top",
    "baseline": 12.5,
    "containerId": null,
-   "originalText": "열 스캔 규칙 (실제 81% 일치)\nJSON 스키마 1.0 · CLI\n지연 v1 52 ms / v2 340 ms\npytest 51 (46개 합성만으로)",
+   "originalText": "열 스캔 규칙 (실제 81% 일치)\nJSON 스키마 1.0 · CLI\n지연 v1 52 ms / v2 340 ms\npytest 82 (76개는 회사 데이터 없이)",
    "lineHeight": 1.25
   },
   {

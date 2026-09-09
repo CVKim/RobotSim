@@ -43,8 +43,8 @@ def main():
                           "valid_pct": int(m.group(8))})
     done = re.search(r"DONE: ([^\n]*)", log)
     exec_rows = [{"cmd": e["seq"], "result": e["result"], "ok": e["ok"], "sim_cycle_s": e["cycle_s"], "wall_s": e.get("wall_s"),
-                  "gap_mm": e.get("gap_mm"), "place_err_mm": e.get("place_err_mm"), "remaining_after": e["remaining"],
-                  "placed_after": e["placed"]} for e in execs]
+                  "gap_mm": e.get("gap_mm"), "pick_err_mm": e.get("pick_err_mm"), "place_err_mm": e.get("place_err_mm"),
+                  "remaining_after": e["remaining"], "placed_after": e["placed"]} for e in execs]
     outcomes = {}
     for e in execs:
         outcomes[e["result"]] = outcomes.get(e["result"], 0) + 1

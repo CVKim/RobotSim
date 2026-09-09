@@ -20,11 +20,11 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 | 팔 도달·충돌 (UR10e, 트윈) | 실측 픽 포즈 167개: 고정 받침대 도달 87% → **리니어 트랙 100%**, 하강·접근 무충돌 99~100%, 순수 이동 3.1 s/픽 | [상세 §10](docs/30_결과_상세.md#10-팔-도달충돌사이클--ur10e-를-트윈에-세우다) · `results/twin_arm_reach.json` |
 | 강건성 (교란 격자, 3시드) | 대면적 결손 30개에서 위치 일치 리콜 v1 57% → v2 74% | 상세 §하단 표 · `results/detector_robustness.json` |
 | ToF 노이즈 모델 | σ(mm) = 180.3 · I^−0.805 (정적 픽셀 12.7만) | [상세 §2](docs/30_결과_상세.md#2-tof-깊이-노이즈-특성-분석) |
-| 대차 후크 반복성 · 도킹 | 데크 ICP 정렬로 22.7 → **3.2 mm** · 고리 포즈로 AGV 도킹 폐루프(시뮬) 27/30, 평균 9.1 s, 최종 오차 측방 3.0 mm | [상세 §7](docs/30_결과_상세.md#7-대차-후크-위치-반복성-3d-정합) · [docs/42 8-b](docs/42_ROS2_핸즈온.md) · `results/cart_dock.json` |
+| 대차 후크 반복성 · 도킹 | 데크 ICP 정렬로 22.7 → **3.2 mm** · 고리 포즈로 AGV 도킹 폐루프(합성 대차 시뮬) 27/30 결합(정답 위치로 다시 재면 26), 평균 9.1 s, 최종 오차 측방 3.0 mm | [상세 §7](docs/30_결과_상세.md#7-대차-후크-위치-반복성-3d-정합) · [docs/42 8-c](docs/42_ROS2_핸즈온.md) · `results/cart_dock.json` |
 | sim2real / 학습 세그 | 합성 전용 0.00 → 노이즈 시뮬 0.43 → +실측 6장 0.99 · seg mAP50 0.99(무효 15%↑ 붕괴) | [상세 §4](docs/30_결과_상세.md#4-합성데이터-sim2real) · §6 |
 | 팔레타이징 RL (3시드) | MaskablePPO 64.7±0.3 vs 휴리스틱 56.6 (+14.3%) · mask 제거 43.2 | [상세 §3](docs/30_결과_상세.md#3-팔레타이징-강화학습) · `results/palletize_multiseed.json` |
 | 모방학습 · VLA | DART BC 100% (가상 Franka) · SmolVLA 파인튜닝 VRAM 4.7 GB | [상세 §5](docs/30_결과_상세.md#5-가상환경-제어모방학습-mujoco-franka) |
-| 테스트 | pytest **75** (69개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · colcon test 38 (launch_testing 통합 4 · bag 재생) | `tests/` · `ros2_ws/.../test/` |
+| 테스트 | pytest **82** (76개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · colcon test 38 (launch_testing 통합 4 · bag 재생) | `tests/` · `ros2_ws/.../test/` |
 
 ## 구성
 
@@ -59,12 +59,15 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 노란 선이 레일 안쪽 벽(u'=0 과 u'=레일 간격), 초록 기둥이 고리, 위쪽의 축이 카메라 위치다. 카메라 높이가 바뀌어도 고리는 대차 좌표에서 같은 자리에 잡힌다.*
 
 이 고리 포즈를 **쓰는 쪽**으로 `dock_node` 와 `agv_sim_node` 를 더했다. 차동 구동 AGV(운동학 시뮬)가 인식한 고리를 향해 다가가 결합 위치에 서는
-폐루프로, 시작 30회 중 27회 결합(평균 9.1 s, 최종 측방 오차 3.0 mm). 연속 주행에서는 인식 지연 때문에 요가 발산해 '멈추고 찍고 움직이는'
-stop-and-go 로 바꿨다 — 저속 도킹에서 측정과 구동을 동기화하는 이유를 직접 겪은 사례다([docs/42 8-b](docs/42_ROS2_핸즈온.md)).
+폐루프로, 시작 30회 중 27회 결합(평균 9.1 s, 최종 측방 오차 3.0 mm). 27 은 제어기가 자기 측정으로 결합을 선언한 횟수이고,
+선 자리를 정답 위치로 다시 재면 허용치 안에 든 것은 26회다. 연속 주행에서는 인식 지연 때문에 요가 발산해 '멈추고 찍고 움직이는'
+stop-and-go 로 바꿨다 — 저속 도킹에서 측정과 구동을 동기화하는 이유를 직접 겪은 사례다([docs/42 8-c](docs/42_ROS2_핸즈온.md)).
 
 ![dock](assets/cart_dock.png)
 
-*화면 설명: 왼쪽은 인식 구동 30회의 궤적(AGV 기준 고리 위치, 별 = 결합 위치), 가운데는 결합 판정 시점의 실제 오차(점선 = 판정 허용치), 오른쪽은 도킹 시간이다.*
+*화면 설명: 왼쪽은 인식 구동 30회의 궤적이다. 파란 점이 출발 자리, 별이 결합 위치이고, 붉은 궤적 3개가 결합에 실패한 회차다.
+가운데는 결합 판정 시점의 실제 오차로, 주황이 인식 구동·파랑이 정답 측정이고 점선 사각형이 판정 허용치(측방·거리 10 mm)다.
+오른쪽은 도킹에 걸린 시간의 분포다. 인식 구동의 16초 이상 세 회차가 고리를 놓쳐 다시 찾은 회차다.*
 
 세 번째 노드 `pick_executor` 는 인식 결과를 **받는 쪽**이다. 픽 포즈를 pre-pick, pick, lift 세 점의 로봇 명령으로 바꿔
 `/robot/target_poses` 로 내고, 실행이 끝나면 인식 노드의 촬영 서비스를 호출해 다음 프레임을 받는다. 합성 12박스 장면을
@@ -102,7 +105,7 @@ stop-and-go 로 바꿨다 — 저속 도킹에서 측정과 구동을 동기화�
 
 | 파일 | 내용 |
 |---|---|
-| [docs/30_결과_상세.md](docs/30_결과_상세.md) | 결과 1~10절 전문 + 한계 + 역량 매핑 |
+| [docs/30_결과_상세.md](docs/30_결과_상세.md) | 결과 1~11절 전문 + 한계 + 역량 매핑 |
 | [docs/40_패키지_사용법.md](docs/40_패키지_사용법.md) | 인식 패키지 CLI·API·JSON 스키마·테스트 |
 | [docs/41_셀_트윈.md](docs/41_셀_트윈.md) | 트윈 구성 · 찾은 결함 · **검증하지 않는 것** |
 | [docs/42_ROS2_핸즈온.md](docs/42_ROS2_핸즈온.md) | ROS2 빌드·실행·CLI 탐색·실습 과제 |
@@ -116,7 +119,7 @@ stop-and-go 로 바꿨다 — 저속 도킹에서 측정과 구동을 동기화�
 ```powershell
 E:\Robot_Sim\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu126
-python -m pytest tests -q                                          # 61 passed (실측 데이터 없으면 5건 skip; 팔 테스트 7건은 .venv 의 mujoco 필요)
+python -m pytest tests -q                                          # 82 passed (실측 데이터가 없으면 6건 skip, mujoco 가 없으면 팔 7건 skip)
 python -m robotsim_perception run <session_dir> --lattice --json out.json --overlay out.png
 .venv\Scripts\python.exe tools/twin_detect_eval.py --scenes 24   # 트윈 절대 정확도
 .venv\Scripts\python.exe tools/twin_closed_loop.py --episodes 10  # 폐루프

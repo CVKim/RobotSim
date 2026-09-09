@@ -8,6 +8,7 @@
  source ──▶ Frame ─▶ runtime.decide() ─▶ boxes / plan ─▶ pose.box_to_pick_pose(T_base_cam) ─▶ msgs.* ─┐
   synthetic |                                                                                      │
   .mim 재생  |   HealthMonitor(드리프트)                                                              ▼
+  twin://    |
                                                                     /tof/points  /perception/boxes  /perception/pick_poses
                                                                     /perception/next_pick  /perception/status  /diagnostics
                                                                     TF base_link → tof_optical      ~/capture (Trigger)
@@ -40,6 +41,14 @@ colcon test --packages-select robotsim_perception_ros && colcon test-result --ve
 ```
 
 실측 세션 재생(로컬 전용): `source:=/mnt/h/<세션 폴더 또는 상위 폴더>`.
+MuJoCo 셀 트윈을 카메라로 쓰려면 `source:=twin://<호스트>:5555` (Windows 쪽에서 `tools/twin_server.py` 를 띄운다 — [docs/42 6-c](../../../docs/42_ROS2_핸즈온.md)).
+
+인식 파라미터 중 결과에 크게 작용하는 둘:
+
+| 파라미터 | 기본값 | 뜻 |
+|---|---|---|
+| `temporal_prior` | false | 직전 프레임에서 고른 층 깊이를 다음 프레임 후보로 준다. 박스가 1~3개 남았을 때 층을 잘못 고르던 문제를 덮는다(트윈 폐루프 43 → 78%) |
+| `layer_roi_mm` | 0 (화면 중앙 ROI) | 층 히스토그램을 팔레트 크기로 한정한다. 절제 실험에서는 단독 이득이 없었다 |
 
 ## 두 번째 노드 — `cart_node` (대차 견인 고리)
 
@@ -62,8 +71,43 @@ ros2 run tf2_ros tf2_echo tof_optical cart
 ros2 topic echo /cart/hook_pose --once
 ```
 
+## 세 번째·네 번째 노드 — `dock_node` + `agv_sim_node` (대차 도킹)
+
+`cart_node` 가 낸 고리 포즈를 **쓰는 쪽**이다. `dock_node` 가 고리까지의 중심선을 따라 속도 명령을 내고,
+`agv_sim_node` 가 차동 구동 AGV 의 운동학으로 그 명령을 적분해 새 상대 자세를 낸다. 제어 규칙 자체는 ROS 없이
+`robotsim_perception/dock.py` 에 있고(단위 테스트 10건), 노드는 그것을 토픽에 연결만 한다.
+
+| 노드 | 구독 | 발행 | 서비스 |
+|---|---|---|---|
+| `dock_node` | `/cart/status`(고리 평면 좌표) · `/agv/rel_pose`(정지 확인) | `/cmd_vel` `geometry_msgs/Twist` · `/dock/state` JSON | `~/capture` 클라이언트 (기본 `/robotsim_cart/capture`) |
+| `agv_sim_node` | `/cmd_vel` | `/agv/rel_pose` JSON (`hook_u_mm`, `rim_v_mm`, `yaw_deg`, `moving`, `cmd_seq`) | — |
+
+**stop-and-go**: `agv_sim_node` 는 명령 하나를 `cmd_hold_s`(0.5 s) 만 적용하고 멈춘다. `dock_node` 는 `/agv/rel_pose` 의
+`moving=false` 를 보고 다음 촬영을 요청하므로 측정은 항상 정지 자세의 것이다. 연속 주행에서는 인식 지연(약 0.45 s)에
+묵은 명령이 겹쳐 요가 발산했다.
+
+| 파라미터 | 기본값 | 뜻 |
+|---|---|---|
+| `dock_v_mm` | −200 | 결합 자리 — 고리가 카메라 앞 200 mm, 정면(u 0), 요 0 |
+| `lookahead_mm` | 250(시뮬 기본 150) | 중심선 위 추종점까지 거리 |
+| `v_max_mm_s` / `w_max_rad_s` | 150 / 0.5 | 속도 상한 |
+| `tol_u_mm` / `tol_v_mm` / `tol_yaw_deg` | 10 / 10 / 2 | 결합 판정 허용치 (제어기 자기 측정 기준) |
+| `trigger_capture` / `capture_service` / `startup_delay_s` | true / `/robotsim_cart/capture` / 2.0 | stop-and-go 촬영 요청 |
+| `watchdog_s` | 3.0 | 측정이 이만큼 끊기면 정지하고 촬영을 다시 요청 |
+| `cmd_hold_s` / `cmd_timeout_s` (agv_sim) | 0.5 / 1.0 | 0 이면 연속 주행 모드 |
+| `init_hook_u_mm` / `init_rim_v_mm` / `init_yaw_deg` (agv_sim) | −80 / −450 / 5 | 시작 자세 |
+
+```bash
+ros2 launch robotsim_perception_ros dock.launch.py                       # 합성 대차 + 도킹 + AGV 시뮬 + rviz2
+ros2 launch robotsim_perception_ros dock.launch.py init_hook_u_mm:=120.0 init_rim_v_mm:=-480.0 init_yaw_deg:=-6.0
+ros2 topic echo /dock/state --once
+```
+
+결합까지의 기록과 수치는 [docs/42 8-c](../../../docs/42_ROS2_핸즈온.md) · `results/cart_dock.json`.
+
 ## 한계
 
 - 실로봇·센서 드라이버 없음. `source` 는 합성 또는 파일 재생이며, 실제 셀에서는 이 자리에 센서 SDK 노드가 온다.
 - `T_base_cam` 기본값은 설치 예시일 뿐이다. 값이 틀리면 `/perception/pick_poses` 가 통째로 밀린다.
 - 픽 포즈를 **소비하는** 쪽은 별도 패키지 `ros2_ws/src/pick_executor` 다(3점 궤적 + 재촬영 사이클). 실제 로봇 드라이버는 없다.
+- 도킹의 AGV 는 운동학 플랜트다. 바퀴 미끄러짐·가감속 한계·실제 통신 지연은 없고, 대차 장면도 합성이다.

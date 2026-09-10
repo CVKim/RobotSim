@@ -62,11 +62,11 @@ GROUPS = [
             "pytest 84 (78개는 회사 데이터 없이)",
         ]),
     ]),
-    dict(id="ros", title="ROS2 Humble (WSL2)  노드 6개: 인식 · 대차 · 제어 · 트윈 브리지 · 도킹 — 신규", x=350, y=430, w=440, h=140, style="new", lines=[
-        "perception_node: /tof/points · pick_poses · TF base_link → tof_optical (정적)",
-        "pick_executor: pick_poses → /robot/target_poses 3점 · 완료 보고 대기",
-        "cart_node: hook_pose · 동적 TF → dock_node+agv_sim 도킹  ·  twin_bridge: 트윈 (TCP)",
-        "인터페이스: ExecutePick 액션 · DockState · URDF/rviz 팔 · colcon test 39",
+    dict(id="ros", title="ROS2 Humble (WSL2) — 노드 6개", x=350, y=430, w=440, h=140, style="new", lines=[
+        "perception_node → pick_executor → twin_bridge (빈피킹)",
+        "cart_node → dock_node → agv_sim_node (대차 도킹)",
+        "ExecutePick 액션 · DockState · URDF/rviz 팔 · TF 검사",
+        "colcon test 39 · launch_testing 통합 5",
     ]),
     dict(id="twin", title="MuJoCo 셀 디지털 트윈", x=860, y=60, w=300, h=160, style="normal", lines=[
         "실측 역산 지오메트리 (2970 vs 2973 mm)",
@@ -112,6 +112,17 @@ def _esc(s: str) -> str:
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+def _text_w(s: str, size: float) -> float:
+    """글자 폭 추정 — 한글·기호는 전각(1.0), 라틴은 0.56 로 본다. 넘치는 글자를 잡기 위한 보수적 값."""
+    return size * sum(1.0 if ord(ch) > 0x2E80 else 0.56 for ch in s)
+
+
+def _fit(s: str, max_w: float, size: float, floor: float = 8.5) -> float:
+    """max_w 안에 들어가도록 글자 크기를 줄인다(하한 floor). 박스 밖으로 새는 줄을 없애기 위한 장치."""
+    w = _text_w(s, size)
+    return size if w <= max_w else max(floor, size * max_w / w)
+
+
 def svg() -> str:
     o = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" '
          f'font-family=\'{FONT}\'>',
@@ -124,19 +135,23 @@ def svg() -> str:
         d = f' stroke-dasharray="{dash}"' if dash else ""
         o.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="6" fill="{fill}" stroke="{stroke}" '
                  f'stroke-width="1.2"{d}/>')
-        o.append(f'<text x="{x + 10}" y="{y + 19}" font-size="12.5" font-weight="700" fill="{tcol}">{_esc(title)}</text>')
+        ts = _fit(title, w - 20, 12.5)
+        o.append(f'<text x="{x + 10}" y="{y + 19}" font-size="{ts:.1f}" font-weight="700" fill="{tcol}">{_esc(title)}</text>')
         for i, ln in enumerate(lines):
-            o.append(f'<text x="{x + 10}" y="{y + 40 + 17 * i}" font-size="11.5" fill="#374151">{_esc(ln)}</text>')
+            fs = _fit(ln, w - 20, 11.5)
+            o.append(f'<text x="{x + 10}" y="{y + 40 + 17 * i}" font-size="{fs:.1f}" fill="#374151">{_esc(ln)}</text>')
 
     for g in GROUPS:
         st = STYLE[g["style"]]
         d = f' stroke-dasharray="{st["dash"]}"' if st["dash"] else ""
         o.append(f'<rect x="{g["x"]}" y="{g["y"]}" width="{g["w"]}" height="{g["h"]}" rx="9" '
                  f'fill="{st["fill"]}" stroke="{st["stroke"]}" stroke-width="1.5"{d}/>')
-        o.append(f'<text x="{g["x"] + 12}" y="{g["y"] + 21}" font-size="13" font-weight="700" '
+        gs = _fit(g["title"], g["w"] - 24, 13)
+        o.append(f'<text x="{g["x"] + 12}" y="{g["y"] + 21}" font-size="{gs:.1f}" font-weight="700" '
                  f'fill="{st["title"]}">{_esc(g["title"])}</text>')
         for i, ln in enumerate(g.get("lines", [])):
-            o.append(f'<text x="{g["x"] + 12}" y="{g["y"] + 46 + 19 * i}" font-size="12" fill="#1f2937">{_esc(ln)}</text>')
+            fs = _fit(ln, g["w"] - 24, 12)
+            o.append(f'<text x="{g["x"] + 12}" y="{g["y"] + 46 + 19 * i}" font-size="{fs:.1f}" fill="#1f2937">{_esc(ln)}</text>')
         for c in g.get("cards", []):
             card(c["x"], c["y"], c["w"], c["h"], c["title"], c["lines"])
 

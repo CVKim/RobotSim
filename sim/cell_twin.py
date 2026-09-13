@@ -113,13 +113,31 @@ def settle(model, data, steps=1200):
     return data
 
 
-def ground_truth(model, data, top_only=True, tol_mm=45.0):
+def camera_transform(model, data, cam_name: str = "tof") -> np.ndarray:
+    """실제 카메라 자세에서 T_base_cam (ToF 카메라 좌표 mm -> 월드 mm) 을 만든다.
+
+    MuJoCo 카메라는 자기 -Z 를 바라보고 +Y 가 화면 위다. ToF 규약은 X 오른쪽 · Y 아래 · D 전방이므로
+    열이 [X_cam, -Y_cam, -Z_cam] 인 회전이 된다. 탑다운(quat 1 0 0 0)에서는
+    topdown_camera_transform(CAM_H) 와 정확히 같은 값이 나온다 — 기운 카메라 실험용 일반화."""
+    import mujoco
+    cid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, cam_name)
+    R = data.cam_xmat[cid].reshape(3, 3)
+    T = np.eye(4)
+    T[:3, 0], T[:3, 1], T[:3, 2] = R[:, 0], -R[:, 1], -R[:, 2]
+    T[:3, 3] = data.cam_xpos[cid] * 1000.0
+    return T
+
+
+def ground_truth(model, data, top_only=True, tol_mm=45.0, T_base_cam=None):
     """물리 안정화 후의 **실제** 박스 상면 정보 (ToF 카메라 좌표 mm).
 
     반환 [{'name','center_mm'(X,Y),'top_d_mm','dims_mm'(L,W),'ang_deg','layer_top'}...]
     top_only=True 면 최상층(카메라 최근접 상면) ±tol 안의 박스만 — 검출기가 보는 대상과 일치.
+    치수는 박스마다 모델의 geom 크기에서 읽는다(혼합 SKU 씬 지원).
+    T_base_cam 을 주면 그 카메라 좌표로 환산한다(기운 카메라). 없으면 지금까지의 탑다운 관례를 쓴다.
     """
     import mujoco
+    inv = None if T_base_cam is None else np.linalg.inv(np.asarray(T_base_cam, float))
     out = []
     for i in range(model.nbody):
         name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, i)
@@ -127,18 +145,30 @@ def ground_truth(model, data, top_only=True, tol_mm=45.0):
             continue
         p = data.xpos[i]
         R = data.xmat[i].reshape(3, 3)
+        gid = int(np.nonzero(model.geom_bodyid == i)[0][0])
+        hx, hy, hz = (float(v) for v in model.geom_size[gid][:3])      # 박스마다 실제 치수 (혼합 SKU)
         # 상면 중심 = 바디 중심 + 로컬 +Z * hz  (회전 반영)
-        top_c = p + R @ np.array([0.0, 0.0, BOX[2] / 2.0])
+        top_c = p + R @ np.array([0.0, 0.0, hz])
         # 상면 평면상의 변 방향 -> 이미지 평면 투영 각도 및 실치수
         e1, e2 = R @ np.array([1.0, 0, 0]), R @ np.array([0, 1.0, 0])
-        L = BOX[0] * float(np.hypot(e1[0], e1[1]))    # 기울면 투영 길이가 줄어듦
-        W = BOX[1] * float(np.hypot(e2[0], e2[1]))
-        ang = float(np.degrees(np.arctan2(-e1[1], e1[0])) % 180.0)   # ToF Y = -world Y
+        if inv is None:
+            L = 2 * hx * float(np.hypot(e1[0], e1[1]))    # 기울면 투영 길이가 줄어듦
+            W = 2 * hy * float(np.hypot(e2[0], e2[1]))
+            ang = float(np.degrees(np.arctan2(-e1[1], e1[0])) % 180.0)   # ToF Y = -world Y
+            cx, cy, cd = top_c[0] * 1000.0, -top_c[1] * 1000.0, (CAM_H - top_c[2]) * 1000.0
+        else:
+            c_cam = inv[:3, :3] @ (top_c * 1000.0) + inv[:3, 3]        # 카메라 좌표 (X, Y, D)
+            a1 = inv[:3, :3] @ e1
+            a2 = inv[:3, :3] @ e2
+            L = 2 * hx * float(np.hypot(a1[0], a1[1]))
+            W = 2 * hy * float(np.hypot(a2[0], a2[1]))
+            ang = float(np.degrees(np.arctan2(a1[1], a1[0])) % 180.0)
+            cx, cy, cd = float(c_cam[0]), float(c_cam[1]), float(c_cam[2])
         if L < W:
             L, W, ang = W, L, (ang + 90.0) % 180.0
         out.append({"name": name,
-                    "center_mm": (float(top_c[0] * 1000.0), float(-top_c[1] * 1000.0)),
-                    "top_d_mm": float((CAM_H - top_c[2]) * 1000.0),
+                    "center_mm": (float(cx), float(cy)),
+                    "top_d_mm": float(cd),
                     "dims_mm": (round(L * 1000.0, 1), round(W * 1000.0, 1)),
                     "ang_deg": round(ang, 1),
                     "tilt_deg": round(float(np.degrees(np.arccos(np.clip(abs(R[2, 2]), 0, 1)))), 2)})

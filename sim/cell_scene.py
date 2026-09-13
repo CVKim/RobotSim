@@ -56,7 +56,8 @@ ARM_DEFAULT = dict(base_xy=(-0.6, 0.85), pedestal_h=0.8, track_range=0.0)
 
 
 def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
-              tier_sheet=True, distractors=True, arm=None, static_boxes=None, arm_layout=False, layout_cfg=None):
+              tier_sheet=True, distractors=True, arm=None, static_boxes=None, arm_layout=False, layout_cfg=None,
+              sku=None, cam_tilt_deg=0.0):
     """layout: [(col,row,layer), ...] 소스 팔레트에 놓을 박스들. dest_stack: 목적지에 미리 쌓인 개수.
 
     arm: None 이면 기존처럼 mocap 석션 EE. dict(base_xy, pedestal_h, track_range[, meshes]) 를 주면
@@ -67,6 +68,11 @@ def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
     layout_cfg: 설비 제외 구역을 정하는 (base_xy, track_range). 주면 arm/arm_layout 의 값 대신 이걸 쓴다 —
          고정 받침대·트랙·mocap 세 변형이 **정확히 같은** 설비 집합을 갖게 하려면 셋 모두에 같은 layout_cfg 를 준다
          (검토에서 발견: 트랙 변형만 제외 구역이 넓어 에피소드마다 설비가 2~4개 적었다).
+
+    sku: layout 과 같은 길이의 [(L, W, H) m] 목록. 주면 박스마다 다른 치수를 쓴다(혼합 SKU 실험).
+         None 이면 전부 기준 SKU(BOX). 층 높이는 그 칸에 쌓인 박스들의 실제 높이를 누적한다.
+    cam_tilt_deg: ToF 카메라를 팔레트 중심 둘레로 기울인다(0 = 지금까지의 탑다운). 거리는 그대로 CAM_H.
+         탑다운 가정(층 = 같은 깊이)이 몇 도에서 깨지는지 보는 실험용.
 
     반환 (xml_str, gt) — gt['boxes'] = [{'name','xyz_m','yaw_deg','layer'}...] 배치 시점 정답.
     실제 정답은 물리 안정화 후 mjData 에서 다시 읽는다 (cell_twin.settle 참조).
@@ -118,7 +124,14 @@ def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
     <light pos="1.2 1.0 3.4" dir="-0.3 -0.25 -1" diffuse="0.35 0.35 0.35"/>
     <geom name="floor" type="plane" size="6 6 0.05" material="floor"/>
 ''')
-    parts.append(f'    <camera name="tof" pos="0 0 {CAM_H:.4f}" quat="1 0 0 0" fovy="{FOVY_DEG:.4f}"/>\n')
+    if abs(float(cam_tilt_deg)) < 1e-6:
+        parts.append(f'    <camera name="tof" pos="0 0 {CAM_H:.4f}" quat="1 0 0 0" fovy="{FOVY_DEG:.4f}"/>\n')
+    else:
+        # 팔레트 중심을 계속 보면서 -Y 쪽으로 기운 카메라. MuJoCo 카메라는 자기 -Z 를 본다.
+        t = np.radians(float(cam_tilt_deg))
+        cy, cz = -CAM_H * np.sin(t), CAM_H * np.cos(t)
+        parts.append(f'    <camera name="tof" pos="0 {cy:.4f} {cz:.4f}" '
+                     f'xyaxes="1 0 0 0 {np.cos(t):.6f} {np.sin(t):.6f}" fovy="{FOVY_DEG:.4f}"/>\n')
 
     # 소스 팔레트 데크 (T-11 1100x1100, 두께 40mm) + 리프트 기둥
     dz = 0.02
@@ -170,11 +183,13 @@ def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
                                   "focal_px": FOCAL_PX, "img": [IMG_W, IMG_H]},
           "deck_h_m": DECK_H, "box_m": list(BOX), "dest_world_xy_m": [dx, dy]}
 
-    def add_box(i, x, y, layer, base_z, tag):
+    def add_box(i, x, y, layer, base_z, tag, dims=None, stack_h=0.0):
+        """dims 를 주면 그 박스만 다른 치수(혼합 SKU). stack_h 는 이 칸에 이미 쌓인 높이(m)."""
+        hx, hy, hz = (BOX[0] / 2, BOX[1] / 2, BOX[2] / 2) if dims is None else (dims[0] / 2, dims[1] / 2, dims[2] / 2)
         yaw = float(rng.normal(0, yaw_jitter_deg))
         xx = x + float(rng.normal(0, j))
         yy = y + float(rng.normal(0, j))
-        zz = base_z + hz + layer * BOX[2] + 0.0015
+        zz = base_z + hz + (stack_h if dims is not None else layer * BOX[2]) + 0.0015
         name = f"box{i}"
         parts.append(
             f'    <body name="{name}" pos="{xx:.5f} {yy:.5f} {zz:.5f}" euler="0 0 {np.radians(yaw):.5f}">\n'
@@ -188,9 +203,13 @@ def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
 
     i = 0
     base_src = DECK_H + (0.004 if tier_sheet else 0.0)
-    for (c, r, layer) in layout:
+    stack = {}                      # (col,row) -> 이미 쌓인 높이 (혼합 SKU 는 높이가 제각각이다)
+    for k, (c, r, layer) in enumerate(layout):
         x, y = grid_xy(c, r)
-        add_box(i, x, y, layer, base_src, "source")
+        dims = None if sku is None else tuple(float(v) for v in sku[k])
+        add_box(i, x, y, layer, base_src, "source", dims=dims, stack_h=stack.get((c, r), 0.0))
+        if dims is not None:
+            stack[(c, r)] = stack.get((c, r), 0.0) + dims[2]
         i += 1
     # 고정 박스(관절 없음): 실측 프레임에서 검출한 박스를 그 자리에 그대로 세울 때 쓴다 (팔 도달·충돌 평가).
     # dict(x, y, z_top, yaw_rad, L, W) — 월드 m / rad. 높이는 SKU 높이(283 mm)로 두고 상면을 z_top 에 맞춘다.

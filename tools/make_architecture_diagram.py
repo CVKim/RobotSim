@@ -59,7 +59,7 @@ GROUPS = [
             "열 스캔 규칙 (실제 81% 일치)",
             "JSON 스키마 1.0 · CLI",
             "지연 v1 52 ms / v2 340 ms",
-            "pytest 94 (88개는 회사 데이터 없이)",
+            "pytest 98 (92개는 회사 데이터 없이)",
         ]),
     ]),
     dict(id="ros", title="ROS2 Humble (WSL2) — 노드 6개", x=350, y=430, w=440, h=140, style="new", lines=[

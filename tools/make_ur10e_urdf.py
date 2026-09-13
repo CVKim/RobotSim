@@ -91,11 +91,13 @@ def urdf(links: dict, base_xy, pedestal_h: float, track_range: float, tool_len: 
     def cylinder_link(name, length, radius, color="0.82 0.82 0.82 1", offset=(0, 0, 0)):
         a(f'  <link name="{name}">')
         if length > 0:
-            a('    <visual>')
-            a(f'      <origin xyz="{offset[0]:.4f} {offset[1]:.4f} {offset[2]:.4f}" rpy="0 0 0"/>')
-            a(f'      <geometry><cylinder length="{length:.4f}" radius="{radius:.4f}"/></geometry>')
-            a(f'      <material name="{name}_m"><color rgba="{color}"/></material>')
-            a('    </visual>')
+            for tag in ("visual", "collision"):        # 충돌 형상도 같이 낸다 — MoveIt 은 이것으로 자기·장면 충돌을 본다
+                a(f'    <{tag}>')
+                a(f'      <origin xyz="{offset[0]:.4f} {offset[1]:.4f} {offset[2]:.4f}" rpy="0 0 0"/>')
+                a(f'      <geometry><cylinder length="{length:.4f}" radius="{radius:.4f}"/></geometry>')
+                if tag == "visual":
+                    a(f'      <material name="{name}_m"><color rgba="{color}"/></material>')
+                a(f'    </{tag}>')
         a('  </link>')
 
     a('<?xml version="1.0"?>')
@@ -149,7 +151,6 @@ def urdf(links: dict, base_xy, pedestal_h: float, track_range: float, tool_len: 
         else:
             d, mid = np.array([0.0, 0.0, 1.0]), [0.0, 0.0, seg / 2.0]
         a(f'  <link name="{name}">')
-        a('    <visual>')
         # 원기둥 축(+z)을 d 방향으로 돌린다
         axis = np.cross([0.0, 0.0, 1.0], d)
         s, c = float(np.linalg.norm(axis)), float(np.dot([0.0, 0.0, 1.0], d))
@@ -163,10 +164,13 @@ def urdf(links: dict, base_xy, pedestal_h: float, track_range: float, tool_len: 
             R = np.eye(3) + math.sin(ang) * K + (1 - math.cos(ang)) * (K @ K)
             pitch = math.asin(max(-1.0, min(1.0, -R[2, 0])))
             rpy = (math.atan2(R[2, 1], R[2, 2]), pitch, math.atan2(R[1, 0], R[0, 0]))
-        a(f'      <origin xyz="{mid[0]:.4f} {mid[1]:.4f} {mid[2]:.4f}" rpy="{rpy[0]:.6f} {rpy[1]:.6f} {rpy[2]:.6f}"/>')
-        a(f'      <geometry><cylinder length="{max(seg, 0.02):.4f}" radius="{radius:.4f}"/></geometry>')
-        a(f'      <material name="{name}_m"><color rgba="{color}"/></material>')
-        a('    </visual>')
+        for tag in ("visual", "collision"):
+            a(f'    <{tag}>')
+            a(f'      <origin xyz="{mid[0]:.4f} {mid[1]:.4f} {mid[2]:.4f}" rpy="{rpy[0]:.6f} {rpy[1]:.6f} {rpy[2]:.6f}"/>')
+            a(f'      <geometry><cylinder length="{max(seg, 0.02):.4f}" radius="{radius:.4f}"/></geometry>')
+            if tag == "visual":
+                a(f'      <material name="{name}_m"><color rgba="{color}"/></material>')
+            a(f'    </{tag}>')
         a('  </link>')
         j = L["joint"]
         if j is None:                        # tool: 플랜지 사이트에 고정

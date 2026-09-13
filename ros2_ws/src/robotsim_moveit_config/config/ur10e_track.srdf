@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!-- 셀 트윈의 UR10e + 리니어 트랙. URDF 는 tools/make_ur10e_urdf.py 가 MJCF 에서 생성한 것을 쓴다.
+     계획 그룹은 트랙(직동) + 6축이다 — 우리 RRT 비교 실험과 같은 7자유도 문제를 MoveIt 에도 준다. -->
+<robot name="ur10e_track">
+  <group name="arm">
+    <chain base_link="base_link" tip_link="tcp"/>
+  </group>
+
+  <group_state name="home" group="arm">
+    <joint name="track_joint" value="0"/>
+    <joint name="shoulder_pan_joint" value="0"/>
+    <joint name="shoulder_lift_joint" value="-1.57"/>
+    <joint name="elbow_joint" value="1.57"/>
+    <joint name="wrist_1_joint" value="-1.57"/>
+    <joint name="wrist_2_joint" value="-1.57"/>
+    <joint name="wrist_3_joint" value="0"/>
+  </group_state>
+
+  <!-- 붙어 있거나 겹쳐 있는 링크 쌍은 자기 충돌에서 뺀다 (MoveIt Setup Assistant 가 하는 일을 손으로) -->
+  <disable_collisions link1="pedestal" link2="rail" reason="Adjacent"/>
+  <disable_collisions link1="pedestal" link2="carriage" reason="Never"/>
+  <disable_collisions link1="pedestal" link2="ur_base" reason="Never"/>
+  <disable_collisions link1="pedestal" link2="shoulder_link" reason="Never"/>
+  <disable_collisions link1="rail" link2="carriage" reason="Adjacent"/>
+  <disable_collisions link1="rail" link2="ur_base" reason="Never"/>
+  <disable_collisions link1="rail" link2="shoulder_link" reason="Never"/>
+  <disable_collisions link1="carriage" link2="ur_base" reason="Adjacent"/>
+  <disable_collisions link1="carriage" link2="shoulder_link" reason="Never"/>
+  <disable_collisions link1="ur_base" link2="shoulder_link" reason="Adjacent"/>
+  <disable_collisions link1="ur_base" link2="upper_arm_link" reason="Never"/>
+  <disable_collisions link1="shoulder_link" link2="upper_arm_link" reason="Adjacent"/>
+  <disable_collisions link1="upper_arm_link" link2="forearm_link" reason="Adjacent"/>
+  <disable_collisions link1="forearm_link" link2="wrist_1_link" reason="Adjacent"/>
+  <disable_collisions link1="wrist_1_link" link2="wrist_2_link" reason="Adjacent"/>
+  <disable_collisions link1="wrist_2_link" link2="wrist_3_link" reason="Adjacent"/>
+  <disable_collisions link1="wrist_1_link" link2="wrist_3_link" reason="Never"/>
+  <disable_collisions link1="wrist_3_link" link2="tool" reason="Adjacent"/>
+  <disable_collisions link1="wrist_2_link" link2="tool" reason="Never"/>
+</robot>

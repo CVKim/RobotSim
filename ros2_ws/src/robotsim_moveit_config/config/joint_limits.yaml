@@ -1,0 +1,38 @@
+# 관절 속도·가속도 한계. 속도는 sim/arm.py 의 VMAX_RAD_S(UR10e 사양)와 같은 값을 쓴다 —
+# 계획기와 트윈 실행기가 다른 한계를 보면 계획 시간과 실제 사이클이 어긋난다.
+joint_limits:
+  track_joint:
+    has_velocity_limits: true
+    max_velocity: 1.0
+    has_acceleration_limits: true
+    max_acceleration: 2.0
+  shoulder_pan_joint:
+    has_velocity_limits: true
+    max_velocity: 2.094
+    has_acceleration_limits: true
+    max_acceleration: 4.0
+  shoulder_lift_joint:
+    has_velocity_limits: true
+    max_velocity: 2.094
+    has_acceleration_limits: true
+    max_acceleration: 4.0
+  elbow_joint:
+    has_velocity_limits: true
+    max_velocity: 3.142
+    has_acceleration_limits: true
+    max_acceleration: 6.0
+  wrist_1_joint:
+    has_velocity_limits: true
+    max_velocity: 3.142
+    has_acceleration_limits: true
+    max_acceleration: 6.0
+  wrist_2_joint:
+    has_velocity_limits: true
+    max_velocity: 3.142
+    has_acceleration_limits: true
+    max_acceleration: 6.0
+  wrist_3_joint:
+    has_velocity_limits: true
+    max_velocity: 3.142
+    has_acceleration_limits: true
+    max_acceleration: 6.0

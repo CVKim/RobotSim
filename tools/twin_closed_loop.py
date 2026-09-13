@@ -261,6 +261,9 @@ class ArmCell(Cell):
         self.arm = Arm(self.m, self.d)
         self.q_cmd = self.arm.get_q().copy()          # 홈 (Cell.__init__ 에서 정착 전에 맞춰 둠)
         self.box_gids = box_body_geom_ids(self.m)
+        self.plan_around = False        # True 면 직선이 막힐 때 경로 계획으로 돌아간다 (tools/twin_path_plan.py 참고)
+        self.plan_seed = 0
+        self.planned_moves = 0
         self._rot = rot_from_approach_yaw
         for _ in range(200):
             self.mj.mj_step(self.m, self.d)
@@ -322,9 +325,32 @@ class ArmCell(Cell):
         if not r.ok:
             return False, "ik_unreachable", r.pos_err_m * 1000.0
         if hits and check_path:
-            return False, "path_collision", 0.0
+            if not self.plan_around:
+                return False, "path_collision", 0.0
+            # 직선(관절 보간)이 막히면 돌아가는 경로를 찾는다. 계획도 실패하면 그때 포기한다.
+            path = self._plan_path(r.q, allowed, q_now, qv_now)
+            if path is None:
+                return False, "path_collision", 0.0
+            self._execute_path(path[1:], speed_scale=(0.4 if speed_mps < 0.3 else 1.0), settle_steps=settle_steps)
+            self.planned_moves += 1
+            return True, "ok", float(np.linalg.norm(self.ee_pos() - goal)) * 1000.0
         self._execute(r.q, speed_scale=(0.4 if speed_mps < 0.3 else 1.0), settle_steps=settle_steps)
         return True, "ok", float(np.linalg.norm(self.ee_pos() - goal)) * 1000.0
+
+    def _plan_path(self, q_goal, allowed, q_now, qv_now):
+        """관절 공간 RRT-Connect + 단축. 계획 동안 팔을 후보 자세로 옮겨 보므로 끝나면 상태를 되돌린다."""
+        import plan_rrt
+        with self._payload_aware() as extra:
+            try:
+                path = plan_rrt.plan(self.arm, self.q_cmd, q_goal, seed=self.plan_seed,
+                                     allowed_gids=list(allowed) + extra, max_iters=1500)
+                if path is not None:
+                    path = plan_rrt.shortcut(self.arm, path, seed=self.plan_seed,
+                                             allowed_gids=list(allowed) + extra)
+            finally:
+                self._restore(q_now, qv_now)
+        self.plan_seed += 1
+        return path
 
     def move_linear(self, xyz_w, speed_mps=0.6, settle_steps=100, yaw_deg=0.0, allow_box_contact=False,
                     step_m=0.05, **_):
@@ -471,9 +497,11 @@ def pick_order(boxes, dest_xy_mm, col_tol=80.0):
 
 
 def run_episode(layout, seed, oracle=False, conf_min=0.0, use_footprint=True, verbose=False, arm_cfg=None,
-                arm_layout=False, layout_cfg=None, layer_roi_mm=None, temporal_prior=False):
+                arm_layout=False, layout_cfg=None, layer_roi_mm=None, temporal_prior=False, plan_around=False):
     cell = (ArmCell(layout, seed, arm_cfg, layout_cfg=layout_cfg) if arm_cfg
             else Cell(layout, seed, arm_layout=arm_layout, layout_cfg=layout_cfg))
+    if plan_around and arm_cfg:
+        cell.plan_around = True        # 직선이 막히면 RRT-Connect 로 돌아간다
     rng = np.random.default_rng(10_000 + seed)
     T = topdown_camera_transform(cam_height_mm=CAM_H * 1000.0)   # 트윈은 외참을 정확히 안다
     dest_w = np.array(dest_world_xy())
@@ -639,6 +667,7 @@ def main():
                     help="팔 없이(mocap) 돌리되 팔 씬과 같은 설비 배치를 쓴다 — 실행기 비교를 같은 장면에서 하기 위함")
     ap.add_argument("--layer-roi", type=float, default=0.0, help="층 히스토그램을 팔레트 영역(카메라 XY 반경 mm)으로 한정. 0 = 기존(화면 중앙)")
     ap.add_argument("--prior", action="store_true", help="직전 프레임의 층 깊이를 다음 프레임의 사전으로 (잔여 1~3개 층 점프 방지)")
+    ap.add_argument("--plan", action="store_true", help="팔 이동의 직선 경로가 막히면 RRT-Connect 로 돌아간다 (sim/plan_rrt.py)")
     ap.add_argument("--tag", default="", help="결과 파일 이름 접미사 (예: _prior)")
     ap.add_argument("--verbose", action="store_true")
     args = ap.parse_args()
@@ -662,7 +691,7 @@ def main():
             idx = sorted(rng.permutation(N_COL * N_ROW)[:args.boxes])
             layout = [(cells[i][0], cells[i][1], 0) for i in idx]
             log = run_episode(layout, seed=500 + e, oracle=(mode == "oracle"),
-                              verbose=args.verbose, arm_cfg=arm_cfg, arm_layout=args.arm_layout,
+                              verbose=args.verbose, arm_cfg=arm_cfg, arm_layout=args.arm_layout, plan_around=args.plan,
                               layout_cfg=layout_cfg, layer_roi_mm=(args.layer_roi or None), temporal_prior=args.prior)
             eps.append(log)
             print(f"  ep{e}: {log['placed']}/{log['n_boxes']} 배치 "

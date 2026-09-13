@@ -8,6 +8,10 @@
       <geometry><cylinder length="1.0800" radius="0.1600"/></geometry>
       <material name="pedestal_m"><color rgba="0.50 0.52 0.55 1"/></material>
     </visual>
+    <collision>
+      <origin xyz="0.0000 0.0000 0.5400" rpy="0 0 0"/>
+      <geometry><cylinder length="1.0800" radius="0.1600"/></geometry>
+    </collision>
   </link>
   <joint name="pedestal_fixed" type="fixed">
     <parent link="base_link"/><child link="pedestal"/>
@@ -19,6 +23,10 @@
       <geometry><cylinder length="0.0600" radius="0.0500"/></geometry>
       <material name="rail_m"><color rgba="0.35 0.36 0.38 1"/></material>
     </visual>
+    <collision>
+      <origin xyz="0.0000 0.0000 0.0000" rpy="0 0 0"/>
+      <geometry><cylinder length="0.0600" radius="0.0500"/></geometry>
+    </collision>
   </link>
   <joint name="rail_fixed" type="fixed">
     <parent link="pedestal"/><child link="rail"/>
@@ -30,6 +38,10 @@
       <geometry><cylinder length="0.0600" radius="0.1800"/></geometry>
       <material name="carriage_m"><color rgba="0.30 0.30 0.32 1"/></material>
     </visual>
+    <collision>
+      <origin xyz="0.0000 0.0000 0.0300" rpy="0 0 0"/>
+      <geometry><cylinder length="0.0600" radius="0.1800"/></geometry>
+    </collision>
   </link>
   <joint name="track_joint" type="prismatic">
     <parent link="rail"/><child link="carriage"/>
@@ -43,6 +55,10 @@
       <geometry><cylinder length="0.1200" radius="0.0800"/></geometry>
       <material name="ur_base_m"><color rgba="0.28 0.28 0.28 1"/></material>
     </visual>
+    <collision>
+      <origin xyz="0.0000 0.0000 0.0600" rpy="0 0 0"/>
+      <geometry><cylinder length="0.1200" radius="0.0800"/></geometry>
+    </collision>
   </link>
   <joint name="ur_base_fixed" type="fixed">
     <parent link="carriage"/><child link="ur_base"/>
@@ -54,6 +70,10 @@
       <geometry><cylinder length="0.1760" radius="0.0750"/></geometry>
       <material name="shoulder_link_m"><color rgba="0.82 0.82 0.82 1"/></material>
     </visual>
+    <collision>
+      <origin xyz="0.0000 0.0880 0.0000" rpy="-1.570796 -0.000000 0.000000"/>
+      <geometry><cylinder length="0.1760" radius="0.0750"/></geometry>
+    </collision>
   </link>
   <joint name="shoulder_pan_joint" type="revolute">
     <parent link="ur_base"/><child link="shoulder_link"/>
@@ -67,6 +87,10 @@
       <geometry><cylinder length="0.6281" radius="0.0750"/></geometry>
       <material name="upper_arm_link_m"><color rgba="0.49 0.678 0.8 1"/></material>
     </visual>
+    <collision>
+      <origin xyz="0.0000 -0.0685 0.3065" rpy="0.219878 -0.000000 0.000000"/>
+      <geometry><cylinder length="0.6281" radius="0.0750"/></geometry>
+    </collision>
   </link>
   <joint name="shoulder_lift_joint" type="revolute">
     <parent link="shoulder_link"/><child link="upper_arm_link"/>
@@ -80,6 +104,10 @@
       <geometry><cylinder length="0.5710" radius="0.0750"/></geometry>
       <material name="forearm_link_m"><color rgba="0.49 0.678 0.8 1"/></material>
     </visual>
+    <collision>
+      <origin xyz="0.0000 0.0000 0.2855" rpy="0.000000 0.000000 0.000000"/>
+      <geometry><cylinder length="0.5710" radius="0.0750"/></geometry>
+    </collision>
   </link>
   <joint name="elbow_joint" type="revolute">
     <parent link="upper_arm_link"/><child link="forearm_link"/>
@@ -93,6 +121,10 @@
       <geometry><cylinder length="0.1350" radius="0.0500"/></geometry>
       <material name="wrist_1_link_m"><color rgba="0.82 0.82 0.82 1"/></material>
     </visual>
+    <collision>
+      <origin xyz="0.0000 0.0675 0.0000" rpy="-1.570796 -0.000000 0.000000"/>
+      <geometry><cylinder length="0.1350" radius="0.0500"/></geometry>
+    </collision>
   </link>
   <joint name="wrist_1_joint" type="revolute">
     <parent link="forearm_link"/><child link="wrist_1_link"/>
@@ -106,6 +138,10 @@
       <geometry><cylinder length="0.1200" radius="0.0500"/></geometry>
       <material name="wrist_2_link_m"><color rgba="0.82 0.82 0.82 1"/></material>
     </visual>
+    <collision>
+      <origin xyz="0.0000 0.0000 0.0600" rpy="0.000000 0.000000 0.000000"/>
+      <geometry><cylinder length="0.1200" radius="0.0500"/></geometry>
+    </collision>
   </link>
   <joint name="wrist_2_joint" type="revolute">
     <parent link="wrist_1_link"/><child link="wrist_2_link"/>
@@ -119,6 +155,10 @@
       <geometry><cylinder length="0.1000" radius="0.0500"/></geometry>
       <material name="wrist_3_link_m"><color rgba="0.82 0.82 0.82 1"/></material>
     </visual>
+    <collision>
+      <origin xyz="0.0000 0.0500 0.0000" rpy="-1.570796 -0.000000 0.000000"/>
+      <geometry><cylinder length="0.1000" radius="0.0500"/></geometry>
+    </collision>
   </link>
   <joint name="wrist_3_joint" type="revolute">
     <parent link="wrist_2_link"/><child link="wrist_3_link"/>
@@ -132,6 +172,10 @@
       <geometry><cylinder length="0.1500" radius="0.0500"/></geometry>
       <material name="tool_m"><color rgba="0.82 0.82 0.82 1"/></material>
     </visual>
+    <collision>
+      <origin xyz="0.0000 0.0000 0.0750" rpy="0.000000 0.000000 0.000000"/>
+      <geometry><cylinder length="0.1500" radius="0.0500"/></geometry>
+    </collision>
   </link>
   <joint name="tool_fixed" type="fixed">
     <parent link="wrist_3_link"/><child link="tool"/>

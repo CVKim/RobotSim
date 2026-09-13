@@ -83,8 +83,9 @@ class StepRecorder:
 
 
 class TwinServer:
-    def __init__(self, arm: str, n_boxes: int, seed: int, noise: str, log_path: Path):
+    def __init__(self, arm: str, n_boxes: int, seed: int, noise: str, log_path: Path, plan_around: bool = False):
         self.arm_mode, self.noise = arm, noise
+        self.plan_around = bool(plan_around)
         self.log_path = log_path
         self.T = topdown_camera_transform(CAM_H * 1000.0)
         self.busy = False
@@ -104,6 +105,8 @@ class TwinServer:
         self.cell = (ArmCell(layout, self.seed, self.arm_cfg, layout_cfg=layout_cfg) if self.arm_cfg
                      else Cell(layout, self.seed, arm_layout=True, layout_cfg=layout_cfg))
         self.rec = StepRecorder(self.cell.mj, self.cell)
+        if getattr(self, "plan_around", False) and hasattr(self.cell, "plan_around"):
+            self.cell.plan_around = True        # 직선이 막히면 RRT-Connect 로 돌아간다 (sim/plan_rrt.py)
         arm = getattr(self.cell, "arm", None)
         self.joint_names = ((["track_joint"] if getattr(arm, "has_track", False) else []) + list(ARM_JOINTS)) if arm else []
         self.cell.mj = self.rec
@@ -304,6 +307,7 @@ def main():
     ap.add_argument("--boxes", type=int, default=12, help="소스 상층 박스 수 (최대 12)")
     ap.add_argument("--seed", type=int, default=500)
     ap.add_argument("--noise", choices=["tof", "none"], default="tof")
+    ap.add_argument("--plan", action="store_true", help="팔 이동의 직선 경로가 막히면 RRT-Connect 로 돌아간다 (sim/plan_rrt.py)")
     ap.add_argument("--host", default="0.0.0.0")
     ap.add_argument("--port", type=int, default=DEFAULT_PORT)
     ap.add_argument("--log", default=str(LOG_DIR / "twin_server.jsonl"))
@@ -326,7 +330,7 @@ def main():
         pass
     log_path.write_text("", encoding="utf-8")
     t0 = time.perf_counter()
-    srv = TwinServer(args.arm, args.boxes, args.seed, args.noise, log_path)
+    srv = TwinServer(args.arm, args.boxes, args.seed, args.noise, log_path, plan_around=args.plan)
     info = srv.info()
     print(f"twin ready in {time.perf_counter() - t0:.1f} s: arm={args.arm} boxes={info['remaining']} seed={args.seed} "
           f"noise={args.noise} gt_selfcheck={info['gt_selfcheck_mm']} mm  log={log_path}", flush=True)

@@ -59,14 +59,14 @@ GROUPS = [
             "열 스캔 규칙 (실제 81% 일치)",
             "JSON 스키마 1.0 · CLI",
             "지연 v1 52 ms / v2 340 ms",
-            "pytest 98 (92개는 회사 데이터 없이)",
+            "pytest 104 (98개는 회사 데이터 없이)",
         ]),
     ]),
-    dict(id="ros", title="ROS2 Humble (WSL2) — 노드 6개", x=350, y=430, w=440, h=140, style="new", lines=[
+    dict(id="ros", title="ROS2 Humble (WSL2) — 노드 6개 + MoveIt2", x=350, y=430, w=440, h=140, style="new", lines=[
         "perception_node → pick_executor → twin_bridge (빈피킹)",
         "cart_node → dock_node → agv_sim_node (대차 도킹)",
         "ExecutePick 액션 · DockState · URDF/rviz 팔 · TF 검사",
-        "colcon test 39 · launch_testing 통합 5",
+        "MoveIt2 계획 전용 move_group · colcon test 39",
     ]),
     dict(id="twin", title="MuJoCo 셀 디지털 트윈", x=860, y=60, w=300, h=160, style="normal", lines=[
         "실측 역산 지오메트리 (2970 vs 2973 mm)",
@@ -81,7 +81,7 @@ GROUPS = [
         "트윈 자체 결함 2건 실측 대조로 판정",
     ]),
     dict(id="todo", title="미구현 — 하드웨어 · 데이터 필요", x=860, y=430, w=300, h=140, style="todo", lines=[
-        "핸드아이 외참 실측값 · 경로 계획(장애물 회피)",
+        "핸드아이 외참 실측값 (절차는 §12 에서 검증)",
         "줄자 GT · 혼합 SKU · 다른 조명",
         "트윈 박스 이음새 대비 (실측 반사율 편차)",
         "실로봇 연결 (여기까지는 시뮬·재생)",

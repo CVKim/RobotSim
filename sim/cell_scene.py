@@ -78,7 +78,7 @@ def build_xml(layout, seed=0, jitter_mm=4.0, yaw_jitter_deg=1.2, dest_stack=0,
     if arm is not None:
         from arm import arm_mount_xml, track_actuator_xml, ur10e_parts  # noqa: F401  (sim/ 가 sys.path 에 있음)
         arm_cfg = dict(ARM_DEFAULT, **arm)
-        arm_parts = ur10e_parts(arm_cfg.get("meshes"))
+        arm_parts = ur10e_parts(arm_cfg.get("meshes"), calib_plate=bool(arm_cfg.get("calib_plate", False)))
     elif arm_layout:
         arm_cfg = dict(ARM_DEFAULT, **(arm_layout if isinstance(arm_layout, dict) else {}))   # 배치 변경만 (팔 없음)
     excl_cfg = dict(arm_cfg or {}, **(layout_cfg or {})) if (arm_cfg is not None or layout_cfg) else None

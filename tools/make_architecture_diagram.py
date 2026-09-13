@@ -47,7 +47,7 @@ GROUPS = [
             "평면 피팅: 중심·법선·기울기",
             "T_base_cam (4×4) → base_link",
             "6-DoF 픽 포즈: 접근·yaw·pre/post",
-            "석션 풋프린트 판정",
+            "핸드아이 AX=XB (트윈 검증 1~5 mm)",
         ]),
         dict(title="runtime.py — 판정", x=362, y=250, w=205, h=135, lines=[
             "OK / RETAKE / LOW_CONFIDENCE",
@@ -59,7 +59,7 @@ GROUPS = [
             "열 스캔 규칙 (실제 81% 일치)",
             "JSON 스키마 1.0 · CLI",
             "지연 v1 52 ms / v2 340 ms",
-            "pytest 84 (78개는 회사 데이터 없이)",
+            "pytest 94 (88개는 회사 데이터 없이)",
         ]),
     ]),
     dict(id="ros", title="ROS2 Humble (WSL2) — 노드 6개", x=350, y=430, w=440, h=140, style="new", lines=[

@@ -20,11 +20,12 @@ MuJoCo 셀 트윈에서 인식 출력만으로 집어 옮기는 폐루프 → RO
 | 팔 도달·충돌 (UR10e, 트윈) | 실측 픽 포즈 167개: 고정 받침대 도달 87% → **리니어 트랙 100%**, 하강·접근 무충돌 99~100%, 순수 이동 3.1 s/픽 | [상세 §10](docs/30_결과_상세.md#10-팔-도달충돌사이클--ur10e-를-트윈에-세우다) · `results/twin_arm_reach.json` |
 | 강건성 (교란 격자, 3시드) | 대면적 결손 30개에서 위치 일치 리콜 v1 57% → v2 74% | 상세 §하단 표 · `results/detector_robustness.json` |
 | ToF 노이즈 모델 | σ(mm) = 180.3 · I^−0.805 (정적 픽셀 12.7만) | [상세 §2](docs/30_결과_상세.md#2-tof-깊이-노이즈-특성-분석) |
+| 핸드아이 캘리브 (트윈 검증) | AX=XB 로 카메라-로봇 외참을 측정: 자세 8개 이상이면 픽 좌표 오차 **1~5 mm**, 회전 0.03~0.15°. 판 포즈는 인식으로 관측(오차 0.77°·2.5 mm) | [상세 §12](docs/30_결과_상세.md#12-핸드아이-캘리브레이션--카메라-로봇-변환을-가정이-아니라-측정으로) · `results/handeye_calib.json` |
 | 대차 후크 반복성 · 도킹 | 데크 ICP 정렬로 22.7 → **3.2 mm** · 고리 포즈로 AGV 도킹 폐루프(합성 대차 시뮬) 27/30 결합(정답 위치로 다시 재면 26), 평균 9.1 s, 최종 오차 측방 3.0 mm | [상세 §7](docs/30_결과_상세.md#7-대차-후크-위치-반복성-3d-정합) · [docs/42 8-c](docs/42_ROS2_핸즈온.md) · `results/cart_dock.json` |
 | sim2real / 학습 세그 | 합성 전용 0.00 → 노이즈 시뮬 0.43 → +실측 6장 0.99 · seg mAP50 0.99(무효 15%↑ 붕괴) | [상세 §4](docs/30_결과_상세.md#4-합성데이터-sim2real) · §6 |
 | 팔레타이징 RL (3시드) | MaskablePPO 64.7±0.3 vs 휴리스틱 56.6 (+14.3%) · mask 제거 43.2 | [상세 §3](docs/30_결과_상세.md#3-팔레타이징-강화학습) · `results/palletize_multiseed.json` |
 | 모방학습 · VLA | DART BC 100% (가상 Franka) · SmolVLA 파인튜닝 VRAM 4.7 GB | [상세 §5](docs/30_결과_상세.md#5-가상환경-제어모방학습-mujoco-franka) |
-| 테스트 | pytest **84** (78개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · URDF↔MJCF 기구학 대조 · colcon test 39 (launch_testing 통합 5 · bag 재생) | `tests/` · `ros2_ws/.../test/` |
+| 테스트 | pytest **94** (88개는 합성 프레임만으로) · 30세션 전체 파리티 v1/v2 · 대차 4세션 파리티 · URDF↔MJCF 기구학 대조 · colcon test 39 (launch_testing 통합 5 · bag 재생) | `tests/` · `ros2_ws/.../test/` |
 
 ## 구성
 
@@ -104,7 +105,7 @@ rviz 의 팔이 트윈과 같은 자세인지는 눈이 아니라 테스트가 �
 - 실측 정답은 검출기 출력 + RGB 육안 대조(pseudo-GT). 절대 오차는 트윈에서만 측정
 - 폐루프의 팔 실행기는 IK·충돌 검사·관절 속도까지만 본다 — 장애물을 돌아가는 경로 계획과 석션 물리는 없음. 절대값이 아니라 **oracle 대비 인식 비용**이 결과
 - 박스가 1~3개만 남으면 층 선택이 아래층으로 점프하던 문제(정밀도 0.07~0.14)는 직전 프레임의 층 깊이를 사전으로 써 폐루프에서 회복(43 → 78%). 단일 프레임 시도 2건은 기각·기록. 남은 손실은 트윈 박스의 이음새 대비 부족으로 인한 이웃 병합
-- 실로봇·센서 드라이버·핸드아이 외참 실측값·줄자 GT 없음 → 이 항목들은 하드웨어가 있어야 닫힌다
+- 실로봇·센서 드라이버·줄자 GT 없음 → 이 항목들은 하드웨어가 있어야 닫힌다. 핸드아이 외참은 **절차와 검증까지 만들었고**(트윈에서 픽 좌표 1~5 mm) 실제 카메라·로봇으로 한 번 돌리는 것만 남았다
 
 전문: [docs/30 결과 상세 → 실용성 검증과 한계](docs/30_결과_상세.md#실용성-검증과-한계-정직한-평가)
 
@@ -126,7 +127,7 @@ rviz 의 팔이 트윈과 같은 자세인지는 눈이 아니라 테스트가 �
 ```powershell
 E:\Robot_Sim\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu126
-python -m pytest tests -q                                          # 84 passed (실측 데이터가 없으면 6건 skip, mujoco 가 없으면 팔·URDF 9건 skip)
+python -m pytest tests -q                                          # 94 passed (실측 데이터가 없으면 6건 skip, mujoco 가 없으면 팔·URDF 9건 skip)
 python -m robotsim_perception run <session_dir> --lattice --json out.json --overlay out.png
 .venv\Scripts\python.exe tools/twin_detect_eval.py --scenes 24   # 트윈 절대 정확도
 .venv\Scripts\python.exe tools/twin_closed_loop.py --episodes 10  # 폐루프

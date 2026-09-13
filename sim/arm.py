@@ -35,10 +35,16 @@ TOOL_LEN = 0.15                # 플랜지 -> 흡착 컵 면 (m)
 CUP_R = 0.055
 TRACK_JOINT = "track_joint"
 
+# 핸드아이 캘리브 판 (m). 300x200x8 mm 판 + 40x40x15 mm 탭. 툴 +X 로 0.19 m 빼서 손목 그늘을 피한다.
+# 판이 작으면(200x140) ToF 결손이 뚫리는 순간 연결 요소가 조각나 검출률이 뚝 떨어진다 — 실제 캘리브 보드도 크게 쓴다.
+PLATE_L, PLATE_W, PLATE_T = 0.300, 0.200, 0.008
+TAB, TAB_H = 0.040, 0.015
+PLATE_OFFSET_X = 0.190
+
 
 # ------------------------------------------------------------------ MJCF 조립
 
-def ur10e_parts(with_meshes: Optional[bool] = None) -> dict:
+def ur10e_parts(with_meshes: Optional[bool] = None, calib_plate: bool = False) -> dict:
     """Menagerie ur10e.xml 을 읽어 우리 씬에 끼워 넣을 조각(문자열)들을 돌려준다.
 
     반환 dict: default(클래스 트리), asset(재질·메시), body(base 바디 트리 + 툴), actuator, meshdir
@@ -83,6 +89,19 @@ def ur10e_parts(with_meshes: Optional[bool] = None) -> dict:
                   rgba="0.15 0.6 0.8 1", contype="1", conaffinity="1", group="1", mass="0.4",
                   friction="1.2 0.02 0.001")
     ET.SubElement(tool, "site", name="tcp", pos=f"0 0 {TOOL_LEN}", size="0.006", rgba="1 0.2 0.2 1", group="1")
+    if calib_plate:
+        # 핸드아이 캘리브용 판 (툴에 고정). 카메라가 위에서 보므로 툴 -Z 쪽 면이 보이는 면이다.
+        # 손목에 가리지 않도록 툴 +X 로 빼서 단다. 모서리의 탭(높이 15 mm)이 180도 모호성을 없앤다.
+        plate = ET.SubElement(tool, "body", name="calib_plate", pos=f"{PLATE_OFFSET_X} 0 0.02")
+        ET.SubElement(plate, "geom", name="calib_plate_g", type="box",
+                      size=f"{PLATE_L / 2} {PLATE_W / 2} {PLATE_T / 2}", pos="0 0 0",
+                      rgba="0.95 0.95 0.95 1", contype="0", conaffinity="0", mass="0.5")
+        ET.SubElement(plate, "geom", name="calib_tab_g", type="box",
+                      size=f"{TAB / 2} {TAB / 2} {TAB_H / 2}",
+                      pos=f"{PLATE_L / 2 - TAB:.4f} {PLATE_W / 2 - TAB:.4f} {-(PLATE_T / 2 + TAB_H / 2):.4f}",
+                      rgba="0.95 0.95 0.95 1", contype="0", conaffinity="0", mass="0.05")
+        ET.SubElement(plate, "site", name="calib_plate_site", pos="0 0 0", size="0.004",
+                      rgba="0.2 1 0.2 1", group="1")
     # 중력 보상: 위치 서보(kp 5000)만으로는 12.9 kg 상완이 1 m 밖에서 1~2 cm 처진다. 실제 로봇 제어기는 중력을
     # 보상하므로 바디마다 gravcomp=1 을 켜서 서보가 자세 오차만 다루게 한다.
     for b in body.iter("body"):

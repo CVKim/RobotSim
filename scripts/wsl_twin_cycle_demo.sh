@@ -10,7 +10,12 @@ OUT_RVIZ="${2:-/mnt/e/Robot_Sim/assets/ros2_twin_cycle_rviz.png}"
 LOG="${3:-/mnt/e/Robot_Sim/explore/ros2/twin_cycle.log}"
 MAX_WAIT="${4:-1500}"
 USE_ACTION="${5:-false}"      # true 면 픽 명령을 액션(/robot/execute_pick)으로 주고받는다
+GIF="${6:-}"                               # 주면 사이클을 GIF 로 녹화한다 (ImageMagick)
+if [ "$GIF" = "-" ]; then GIF=""; fi       # PowerShell 은 빈 인자를 떨어뜨려 "-" 를 쓴다
+# 주의: `[ ... ] && GIF=""` 로 쓰면 조건이 거짓일 때 줄 전체가 실패로 끝나 set -e 가 스크립트를 끝낸다
 WS=/mnt/e/Robot_Sim/ros2_ws
+# shellcheck disable=SC1091
+source /mnt/e/Robot_Sim/scripts/lib_record.sh
 # shellcheck disable=SC1091
 source /opt/ros/humble/setup.bash
 # shellcheck disable=SC1091
@@ -18,6 +23,7 @@ source "$WS/install/setup.bash"
 export LIBGL_ALWAYS_SOFTWARE=1 QT_QPA_PLATFORM=xcb ROS_DOMAIN_ID=77
 export FASTRTPS_DEFAULT_PROFILES_FILE="$WS/fastdds_no_shm.xml" RCUTILS_LOGGING_BUFFERED_STREAM=0 PYTHONUNBUFFERED=1
 mkdir -p "$(dirname "$LOG")" "$(dirname "$OUT_RVIZ")"
+echo "녹화 대상: ${GIF:-없음}"
 
 Xvfb :99 -screen 0 1600x1000x24 >/dev/null 2>&1 &
 XV=$!
@@ -36,6 +42,10 @@ ros2 daemon stop >/dev/null 2>&1 || true
 HOST_ARG=""; [ -n "$HOST" ] && HOST_ARG="host:=$HOST"
 DISPLAY=:99 setsid ros2 launch twin_bridge twin_cycle.launch.py $HOST_ARG use_action:="$USE_ACTION" >> "$LOG" 2>&1 &
 LAUNCH=$!
+if [ -n "$GIF" ]; then                     # rviz 스플래시가 지나고 첫 명령이 나간 뒤부터 녹화
+    for i in $(seq 1 90); do grep -qE "cmd #1:|goal #1 " "$LOG" 2>/dev/null && break; sleep 1; done
+    rec_start :99 /tmp/rec_twin 1.0      # 사이클이 2분쯤이라 1초 간격 (약 120장)
+fi
 
 # 세 번째 명령이 실행(실시간 재생)되는 중간에 캡처: 'cmd #3:' 로그를 기다린 뒤 4 초. 그 전에 DONE 이 나거나 launch 가 죽으면 바로 캡처
 for i in $(seq 1 120); do
@@ -55,6 +65,7 @@ while ! grep -q 'DONE' "$LOG"; do
     sleep 5
 done
 sleep 3
+[ -n "$GIF" ] && rec_stop "$GIF" 760
 echo "--- execution results (bridge log):"
 grep -oE 'cmd #[0-9]+ -> [a-z_]+' "$LOG" | awk '{print $4}' | sort | uniq -c || true
 echo "--- node log (pick_executor / bridge / perception):"
